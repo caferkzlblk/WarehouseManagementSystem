@@ -1,0 +1,35 @@
+﻿@model IEnumerable<WarehouseManagementSystem.Models.Supplier>
+
+@{
+    ViewData["Title"] = "Tedarikçiler";
+}
+
+<h1>Tedarikçiler</h1>
+
+<p>
+    <a href="@Url.Action("SupplierCreate", "Home")" class="btn btn-primary">Yeni Tedarikçi Oluştur</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tedarikçi Adı</th>
+            <th>İşlemler</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var supplier in Model)
+        {
+            <tr>
+                <td>@supplier.SupplierName</td>
+                <td>
+                    <a href="@Url.Action("SupplierEdit", "Home", new { id = supplier.SupplierID })" class="btn btn-warning">Düzenle</a>
+                    <form action="@Url.Action("SupplierDelete", "Home", new { id = supplier.SupplierID })" method="post" style="display:inline;">
+                        <input type="submit" value="Sil" class="btn btn-danger" />
+                        @Html.AntiForgeryToken()
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

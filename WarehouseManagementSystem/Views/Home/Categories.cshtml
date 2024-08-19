@@ -1,0 +1,36 @@
+﻿@model IEnumerable<WarehouseManagementSystem.Models.Category>
+
+@{
+    ViewData["Title"] = "Kategoriler";
+}
+
+<h1>Kategoriler</h1>
+
+<p>
+    <a href="@Url.Action("CategoryCreate", "Home")" class="btn btn-primary">Yeni Kategori Oluştur</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Kategori Adı</th>
+            <th>İşlemler</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var category in Model)
+        {
+            <tr>
+                <td>@category.CategoryName</td>
+                <td>
+                    <a href="@Url.Action("CategoryEdit", "Home", new { id = category.CategoryID })" class="btn btn-warning">Düzenle</a>
+                    <form action="@Url.Action("CategoryDelete", "Home", new { id = category.CategoryID })" method="post" style="display:inline;">
+                        <input type="submit" value="Sil" class="btn btn-danger" />
+                        @Html.AntiForgeryToken()
+                    </form>
+                </td>
+            </tr>
+        }
+
+    </tbody>
+</table>

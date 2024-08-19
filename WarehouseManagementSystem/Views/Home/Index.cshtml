@@ -1,0 +1,191 @@
+﻿@model IEnumerable<WarehouseManagementSystem.Models.Product>
+@inject IHttpContextAccessor Accessor
+
+@{
+    ViewData["Title"] = "Anasayfa";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var lowStockProducts = ViewBag.LowStockProducts as List<WarehouseManagementSystem.Models.Product>;
+}
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .card {
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+        .card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+    .card-body {
+        padding: 20px;
+    }
+
+    .card-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
+    .container {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .list-group-item {
+        background-color: #e9ecef;
+        border: none;
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
+
+        .list-group-item:nth-child(odd) {
+            background-color: #f1f3f5;
+        }
+
+    #productChart {
+        margin-top: 20px;
+    }
+
+    .toast-container {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 1050;
+        max-width: 300px;
+        max-height: 500px; /* Maksimum yüksekliği ayarlayabilirsiniz */
+        overflow-y: auto;
+    }
+
+    .toast {
+        margin-bottom: 10px;
+    }
+
+    .toast-header {
+        background-color: #007bff;
+        color: #fff;
+    }
+</style>
+
+<h1 class="text-center my-4">Hoşgeldiniz!</h1>
+
+<div class="container">
+    <h2 class="text-center mb-4">Yönetim Paneli</h2>
+    @{
+        var username = Accessor.HttpContext.Session.GetString("UserName");
+    }
+    <div class="text-center mb-4">
+        <span style="color:#007bff; font-size: 1.2rem; font-weight: bold;">@username</span>
+    </div>
+
+    <div class="row text-center">
+        <div class="col-md-4 mb-3">
+            <a href="@Url.Action("Categories", "Home")" class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Kategoriler</h5>
+                    <p class="card-text">Kategori yönetimi ve düzenlemeleri yapabilirsiniz.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="@Url.Action("Suppliers", "Home")" class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Tedarikçiler</h5>
+                    <p class="card-text">Tedarikçi ekleyebilir ve düzenleyebilirsiniz.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="@Url.Action("Users", "Home")" class="card text-white bg-warning mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Kullanıcılar</h5>
+                    <p class="card-text">Kullanıcıları görüntüleyebilir ve yönetebilirsiniz.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="@Url.Action("Roles", "Home")" class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Roller</h5>
+                    <p class="card-text">Kullanıcı rollerini oluşturabilir ve yönetebilirsiniz.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="@Url.Action("Orders", "Home")" class="card text-white bg-danger mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Siparişler</h5>
+                    <p class="card-text">Siparişleri görüntüleyebilir ve yönetebilirsiniz.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="@Url.Action("Products", "Home")" class="card text-white bg-secondary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Ürünler</h5>
+                    <p class="card-text">Ürünleri görüntüleyebilir ve yönetebilirsiniz.</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <h2 class="text-center">Product Summary</h2>
+
+        <canvas id="productChart" width="400" height="200"></canvas>
+        <div class="text-center mt-3">
+            <h3>Toplam Stok Miktarı: @ViewBag.TotalStock</h3>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed">
+        <!-- Toast Messages -->
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/api/product/ProductStockData')
+            .then(response => response.json())
+            .then(data => {
+                const labels = data.map(item => item.productName);
+                const quantities = data.map(item => item.quantityInStock);
+
+                const ctx = document.getElementById('productChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Product Stock',
+                            data: quantities,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var toastElList = [].slice.call(document.querySelectorAll('.toast'));
+        var toastList = toastElList.map(function (toastEl) {
+            return new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 });
+        });
+
+        toastList.forEach(toast => toast.show());
+    });
+</script>

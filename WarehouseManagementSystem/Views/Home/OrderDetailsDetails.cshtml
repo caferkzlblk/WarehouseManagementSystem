@@ -1,0 +1,28 @@
+﻿@model WarehouseManagementSystem.Models.OrderDetails
+
+@{
+    ViewData["Title"] = "Sipariş Detayı";
+}
+
+<h1>Sipariş Detayı</h1>
+
+<div>
+    <h2>Sipariş</h2>
+    <p>Sipariş ID: @Model.Order.OrderID</p>
+    <p>Sipariş Tarihi: @Model.Order.OrderDate</p>
+    <p>Müşteri ID: @Model.Order.CustomerID</p>
+    <p>Durum: @Model.Order.StatusID</p>
+</div>
+
+<div>
+    <h2>Ürün</h2>
+    <p>Ürün ID: @Model.Product.ProductID</p>
+    <p>Ürün Adı: @Model.Product.ProductName</p>
+    <p>Fiyat: @Model.Price</p>
+    <p>Miktar: @Model.Quantity</p>
+    <p>Toplam Tutar: @(Model.Quantity * Model.Price)</p>
+</div>
+
+<p>
+    <a href="@Url.Action("OrderDetails", "Home")" class="btn btn-primary">Geri</a>
+</p>

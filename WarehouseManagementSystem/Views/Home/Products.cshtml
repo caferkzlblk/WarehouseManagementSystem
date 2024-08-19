@@ -1,0 +1,61 @@
+﻿@model IEnumerable<WarehouseManagementSystem.Models.Product>
+
+@{
+    ViewData["Title"] = "Ürünler";
+}
+
+<div class="container mt-5">
+    <h1 class="mb-4">@ViewData["Title"]</h1>
+
+    <div class="mb-3">
+        <a href="@Url.Action("ProductCreate", "Home")" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Yeni Ürün Oluştur
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Ürün Adı</th>
+                    <th>Açıklama</th>
+                    <th>Stok Miktarı</th>
+                    <th>Fiyat</th>
+                    <th>Kategori</th>
+                    <th>Tedarikçi</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var product in Model)
+                {
+                    <tr>
+                        <td>@product.ProductName</td>
+                        <td>@product.Description</td>
+                        <td>@product.QuantityInStock</td>
+                        <td>@product.Price</td>
+                        <td>@product.Category.CategoryName</td>
+                        <td>@product.Supplier.SupplierName</td>
+                        <td class="text-center">
+                            <a href="@Url.Action("ProductEdit", "Home", new { id = product.ProductID })" class="btn btn-warning btn-sm">
+                                <i class="bi bi-pencil"></i> Düzenle
+                            </a>
+                            <form action="@Url.Action("ProductDelete", "Home", new { id = product.ProductID })" method="post" style="display:inline;">
+                                <input type="submit" value="Sil" class="btn btn-danger btn-sm" />
+                                @Html.AntiForgeryToken()
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="form-actions mt-4">
+        <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
+            <i class="bi bi-house"></i> Ana Sayfa
+        </a>
+    </div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">

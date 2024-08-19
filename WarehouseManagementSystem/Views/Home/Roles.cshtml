@@ -1,0 +1,35 @@
+﻿@model IEnumerable<WarehouseManagementSystem.Models.Role>
+
+@{
+    ViewData["Title"] = "Roller";
+}
+
+<h1>Roller</h1>
+
+<p>
+    <a href="@Url.Action("RoleCreate", "Home")" class="btn btn-primary">Yeni Rol Oluştur</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Rol Adı</th>
+            <th>İşlemler</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var role in Model)
+        {
+            <tr>
+                <td>@role.RoleName</td>
+                <td>
+                    <a href="@Url.Action("RoleEdit", "Home", new { id = role.RoleID })" class="btn btn-warning">Düzenle</a>
+                    <form action="@Url.Action("RoleDelete", "Home", new { id = role.RoleID })" method="post" style="display:inline;">
+                        <input type="submit" value="Sil" class="btn btn-danger" />
+                        @Html.AntiForgeryToken()
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

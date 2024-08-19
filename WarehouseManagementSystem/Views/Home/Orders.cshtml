@@ -1,0 +1,199 @@
+﻿@model WarehouseManagementSystem.Models.OrderFilterViewModel
+
+
+@{
+    ViewData["Title"] = "Siparişler";
+    
+    // Kullanıcının rol ID'sini al (örneğin, bunu session'dan veya ViewData'dan alabilirsiniz)
+    int? currentRoleID = ViewData["CurrentRoleID"] as int?;
+}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div class="container mt-5">
+    <h1 class="mb-4">@ViewData["Title"]</h1>
+   
+    <h2>Sipariş Durumunu Güncelle</h2>
+    @using (Html.BeginForm("UpdateOrderStatus", "Home", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.OrderNumberValue, "Order Number")
+            @Html.TextBoxFor(model => model.OrderNumberValue, new { @class = "form-control" })
+            <button type="submit" class="btn btn-primary">Update Status</button>
+        </div>
+
+        
+    }
+
+    <!-- Sonuç Mesajları -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success mt-2">
+            @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger mt-2">
+            @TempData["Error"]
+        </div>
+    }
+</div>
+    <!-- Filtreleme Formu -->
+    <form asp-action="Orders" method="get">
+        <div class="mb-3">
+            @if (currentRoleID == 1)  // Yönetici için sadece sipariş oluşturma butonu görünsün
+            {
+                <a href="@Url.Action("OrderCreate", "Home")" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Yeni Sipariş Oluştur
+                </a>
+            }
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-filter"></i> Filtrele
+            </button>
+            <a href="@Url.Action("ExportOrdersToExcel", "Home", new { statusID = Model.StatusID, startDate = Model.StartDate, endDate = Model.EndDate })" class="btn btn-secondary">
+                <i class="bi bi-file-earmark-excel"></i> Excel'e Aktar
+            </a>
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="statusID">Durum ID</label>
+            <select id="statusID" name="statusID" class="form-control">
+                <option value="">Seçiniz</option>
+                @foreach (var status in Model.Statuses)
+                {
+                    <option value="@status.StatusID" selected="@(status.StatusID == Model.StatusID)">@status.StatusName</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="startDate">Başlangıç Tarihi</label>
+            <input type="date" id="startDate" name="startDate" class="form-control" value="@Model.StartDate?.ToString("yyyy-MM-dd")" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="endDate">Bitiş Tarihi</label>
+            <input type="date" id="endDate" name="endDate" class="form-control" value="@Model.EndDate?.ToString("yyyy-MM-dd")" />
+        </div>
+    </form>
+
+    
+    <div class="table-responsive mt-4">
+        <table class="table table-hover table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Sipariş Tarihi</th>
+                    <th>Durum</th>
+                    <th>Ürün Adı</th>
+                    <th>Miktar</th>
+                    <th>Müşteri ID</th>
+                    <th>Sipariş Numarası</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Orders != null && Model.Orders.Any())
+                {
+                    @foreach (var order in Model.Orders)
+                    {
+                        @foreach (var detail in order.OrderDetails)
+                        {
+                            <tr>
+                                <td>@order.OrderDate.ToShortDateString()</td>
+                                <td>@order.Statuses?.StatusName</td>
+                                <td>@detail.Product.ProductName</td>
+                                <td>@detail.Quantity</td>
+                                <td>@detail.Order.CustomerID</td>
+                                <td>@order.OrderNumberValue</td>
+                                <td class="text-center">
+                                   
+                                    @if (currentRoleID == 2)  
+                                    {
+                                        <form action="@Url.Action("ProcessOrder", "Home", new { id = order.OrderID })" method="post">
+                                            <button type="submit" class="btn btn-primary btn-sm">Bir Sonraki Aşamaya Geç</button>
+                                        </form>
+
+                                    }
+                                    
+                                    @if (currentRoleID == 1)  
+                                    {
+                                        <a href="@Url.Action("OrderEdit", "Home", new { id = order.OrderID })" class="btn btn-warning btn-sm">
+                                            <i class="bi bi-pencil"></i> Düzenle
+                                        </a>
+                                        <form action="@Url.Action("OrderDelete", "Home", new { id = order.OrderID })" method="post" style="display:inline;">
+                                            <input type="submit" value="Sil" class="btn btn-danger btn-sm" />
+                                            @Html.AntiForgeryToken()
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center">Filtreye uyan sipariş bulunamadı.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="form-actions mt-4">
+        <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
+            <i class="bi bi-house"></i> Ana Sayfa
+        </a>
+    </div>
+</div>
+<div class="container mt-5">
+    <h2>Sipariş Ürün Özeti</h2>
+
+    <!-- Grafik -->
+    <canvas id="orderProductChart" width="400" height="200"></canvas>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/Home/GetOrderProductSummaryData')
+            .then(response => response.json())
+            .then(data => {
+                const labels = data.map(item => item.productName);
+                const quantities = data.map(item => item.quantity);
+                const orderDates = data.map(item => new Date(item.orderDate).toLocaleDateString());
+
+                const ctx = document.getElementById('orderProductChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Quantity',
+                            data: quantities,
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: function (tooltipItem) {
+                                        return `Order Date: ${orderDates[tooltipItem.dataIndex]}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    });
+</script>

@@ -1,0 +1,34 @@
+﻿@model IEnumerable<WarehouseManagementSystem.Models.OrderDetails>
+
+@{
+    ViewData["Title"] = "Sipariş Detayları";
+}
+
+<h1>Sipariş Detayları</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Sipariş ID</th>
+            <th>Ürün ID</th>
+            <th>Miktar</th>
+            <th>Fiyat</th>
+            <th>Toplam Tutar</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var detail in Model)
+        {
+            <tr>
+                <td>@detail.OrderID</td>
+                <td>@detail.ProductID</td>
+                <td>@detail.Quantity</td>
+                <td>@detail.Price</td>
+                <td>@(detail.Quantity * detail.Price)</td>
+                <td>
+                    <a href="@Url.Action("OrderDetailsDetails", "Home", new { id = detail.OrderDetailsID })" class="btn btn-info">Detaylar</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

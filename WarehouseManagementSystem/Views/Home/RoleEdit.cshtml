@@ -1,0 +1,19 @@
+﻿@model WarehouseManagementSystem.Models.Role
+
+@{
+    ViewData["Title"] = "Rol Düzenle";
+}
+
+<h1>Rol Düzenle</h1>
+
+<form asp-action="RoleEdit" method="post">
+    <div class="form-group">
+        <label asp-for="RoleName" class="control-label"></label>
+        <input asp-for="RoleName" class="form-control" />
+        <span asp-validation-for="RoleName" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Kaydet" class="btn btn-primary" />
+    </div>
+    @Html.AntiForgeryToken()
+</form>

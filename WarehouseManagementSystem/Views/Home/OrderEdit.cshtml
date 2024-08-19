@@ -1,0 +1,32 @@
+﻿@model WarehouseManagementSystem.Models.Order
+
+@{
+    ViewData["Title"] = "Sipariş Düzenle";
+}
+
+<h1>Sipariş Düzenle</h1>
+
+<form asp-action="OrderEdit" method="post">
+    <div class="form-group">
+        
+        <label asp-for="OrderDate" class="control-label"></label>
+        <input asp-for="OrderDate" type="date" class="form-control" />
+        <span asp-validation-for="OrderDate" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="CustomerID" class="control-label"></label>
+        <input asp-for="CustomerID" class="form-control" />
+        <span asp-validation-for="CustomerID" class="text-danger"></span>
+    </div>
+    <select asp-for="StatusID" class="form-control">
+            @foreach (var status in ViewBag.Statuses as IEnumerable<WarehouseManagementSystem.Models.Statuses>)
+            {
+                <option value="@status.StatusID">@status.StatusName</option>
+            }
+        </select>
+    <div class="form-group">
+        <input type="hidden" asp-for="OrderID" />
+        <input type="submit" value="Kaydet" class="btn btn-primary" />
+    </div>
+    @Html.AntiForgeryToken()
+</form>

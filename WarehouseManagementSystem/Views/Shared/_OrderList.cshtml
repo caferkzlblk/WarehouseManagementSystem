@@ -1,0 +1,34 @@
+﻿@model WarehouseManagementSystem.Models.OrderFilterViewModel
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>OrderID</th>
+            <th>CustomerID</th>
+            <th>OrderDate</th>
+            <th>Status</th>
+            <th>ProductID</th>
+            <th>ProductName</th>
+            <th>Quantity</th>
+            <th>Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var order in Model.Orders)
+        {
+            foreach (var detail in order.OrderDetails)
+            {
+                <tr>
+                    <td>@order.OrderID</td>
+                    <td>@order.CustomerID</td>
+                    <td>@order.OrderDate</td>
+                    <td>@order.Statuses.StatusName</td>
+                    <td>@detail.ProductID</td>
+                    <td>@detail.Product.ProductName</td>
+                    <td>@detail.Quantity</td>
+                    <td>@detail.Price</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>

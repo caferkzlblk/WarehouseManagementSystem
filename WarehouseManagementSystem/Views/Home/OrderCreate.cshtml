@@ -1,0 +1,86 @@
+﻿@model WarehouseManagementSystem.Models.OrderCreateViewModel
+
+@{
+    ViewData["Title"] = "Yeni Sipariş Oluştur";
+}
+
+<div class="container mt-5">
+    <h1 class="mb-4">@ViewData["Title"]</h1>
+
+    <form asp-action="OrderCreate" method="post">
+        <div class="form-group mb-3">
+            <label asp-for="Order.OrderDate" class="form-label"></label>
+            <input asp-for="Order.OrderDate" class="form-control" />
+            <span asp-validation-for="Order.OrderDate" class="text-danger"></span>
+        </div>
+        <div class="form-group mb-3">
+            <label asp-for="Order.CustomerID" class="form-label"></label>
+            <input asp-for="Order.CustomerID" class="form-control" />
+            <span asp-validation-for="Order.CustomerID" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label>Ürün Seçin</label>
+            <select id="product-select" class="form-control">
+                @foreach (var product in Model.AvailableProducts)
+                {
+                    <option value="@product.ProductID">@product.ProductName</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Miktar Girin</label>
+            <input type="number" id="product-quantity" class="form-control" placeholder="Miktar" />
+        </div>
+
+        <button type="button" id="add-product" class="btn btn-secondary">Ürün Ekle</button>
+
+        <ul id="product-list" class="list-group mt-3"></ul>
+
+        <input type="hidden" name="SelectedProductIDs" id="selected-product-ids" />
+        <input type="hidden" name="SelectedQuantities" id="selected-quantities" />
+
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-primary">Siparişi Oluştur</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        let selectedProductIDs = [];
+        let selectedQuantities = [];
+
+        document.getElementById('add-product').addEventListener('click', function () {
+            const productSelect = document.getElementById('product-select');
+            const productQuantity = document.getElementById('product-quantity');
+
+            const productID = productSelect.value;
+            const productName = productSelect.options[productSelect.selectedIndex].text;
+            const quantity = productQuantity.value;
+
+            if (productID && quantity > 0) {
+                selectedProductIDs.push(productID);
+                selectedQuantities.push(quantity);
+
+                const productList = document.getElementById('product-list');
+                const listItem = document.createElement('li');
+                listItem.classList.add('list-group-item');
+                listItem.textContent = `${productName} - Miktar: ${quantity}`;
+                productList.appendChild(listItem);
+
+                document.getElementById('selected-product-ids').value = selectedProductIDs.join(',');
+                document.getElementById('selected-quantities').value = selectedQuantities.join(',');
+
+                productQuantity.value = '';
+            } else {
+                alert('Lütfen bir ürün seçin ve miktar girin.');
+            }
+        });
+
+        document.querySelector('form').addEventListener('submit', function () {
+            console.log('SelectedProductIDs:', document.getElementById('selected-product-ids').value);
+            console.log('Quantities:', document.getElementById('selected-quantities').value);
+        });
+    </script>
+}

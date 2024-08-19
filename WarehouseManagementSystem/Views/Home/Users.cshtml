@@ -1,0 +1,37 @@
+﻿@model IEnumerable<WarehouseManagementSystem.Models.Users>
+
+@{
+    ViewData["Title"] = "Kullanıcılar";
+}
+
+<h1>Kullanıcılar</h1>
+
+<p>
+    <a href="@Url.Action("UserCreate", "Home")" class="btn btn-primary">Yeni Kullanıcı Oluştur</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Kullanıcı Adı</th>
+            <th>Rol</th>
+            <th>İşlemler</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.UserName</td>
+                <td>@user.Role.RoleName</td>
+                <td>
+                    <a href="@Url.Action("UserEdit", "Home", new { id = user.UserID })" class="btn btn-warning">Düzenle</a>
+                    <form action="@Url.Action("UserDelete", "Home", new { id = user.UserID })" method="post" style="display:inline;">
+                        <input type="submit" value="Sil" class="btn btn-danger" />
+                        @Html.AntiForgeryToken()
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
