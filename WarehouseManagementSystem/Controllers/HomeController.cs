@@ -10,7 +10,8 @@ using WarehouseManagementSystem.Models;
 
 namespace WarehouseManagementSystem.Controllers
 {
-   
+    
+ 
     public class HomeController : Controller
     {
         private readonly INotificationService _notificationService;
@@ -22,7 +23,7 @@ namespace WarehouseManagementSystem.Controllers
             _notificationService = notificationService;
         }
 
-        [HttpGet]
+        [HttpGet("Orders/Export")]
         public async Task<IActionResult> ExportOrdersToExcel(int? statusID, DateTime? startDate, DateTime? endDate)
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -85,11 +86,7 @@ namespace WarehouseManagementSystem.Controllers
         }
 
 
-
-
-
-
-
+        
         public IActionResult Index()
         {
           
@@ -127,7 +124,7 @@ namespace WarehouseManagementSystem.Controllers
 
 
 
-        [HttpGet]
+        [HttpGet("Categories")]
      public async Task<IActionResult> Categories()
         {
             var categories = await context.Categories.ToListAsync();
@@ -139,7 +136,7 @@ namespace WarehouseManagementSystem.Controllers
             return View();
         }
 
-        [HttpPost]
+        [HttpPost("Category/Create")]
         [ValidateAntiForgeryToken]
 
         public async Task<IActionResult> CategoryCreate([Bind("CategoryName")] Category category)
@@ -558,6 +555,9 @@ namespace WarehouseManagementSystem.Controllers
             }
         
         }
+       
+       
+        [HttpGet("Orders")]
         public async Task<IActionResult> Orders(int? customerID, int? statusID, DateTime? startDate, DateTime? endDate)
         {
             var orders = await context.Orders
@@ -569,7 +569,7 @@ namespace WarehouseManagementSystem.Controllers
             Console.WriteLine($"statusID: {statusID}");
             Console.WriteLine($"startDate: {startDate}");
             Console.WriteLine($"endDate: {endDate}");
-            // Veritabanýndan sipariþ ürün özetlerini al
+           
             var orderProducts = await context.OrderDetails
                 .Include(od => od.Order)
                 .Include(od => od.Product)
@@ -581,7 +581,7 @@ namespace WarehouseManagementSystem.Controllers
                     OrderDate = od.Order.OrderDate,
                 }).ToListAsync();
 
-            // Sipariþleri filtreleme için sorgu oluþtur
+            
             var ordersQuery = context.Orders.AsQueryable();
             int? currentRoleID = HttpContext.Session.GetInt32("RoleID");
             ViewBag.CurrentRoleID = currentRoleID;
@@ -654,7 +654,7 @@ namespace WarehouseManagementSystem.Controllers
             return View(viewModel);
         }
 
-        [HttpPost]
+        [HttpPost("OrderCreate")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OrderCreate(OrderCreateViewModel viewModel, string selectedQuantities, string selectedProductIDs)
         {

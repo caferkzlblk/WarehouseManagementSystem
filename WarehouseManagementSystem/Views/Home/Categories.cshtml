@@ -4,33 +4,98 @@
     ViewData["Title"] = "Kategoriler";
 }
 
-<h1>Kategoriler</h1>
-
-<p>
-    <a href="@Url.Action("CategoryCreate", "Home")" class="btn btn-primary">Yeni Kategori Oluştur</a>
-</p>
-
-<table class="table">
-    <thead>
-        <tr>
-            <th>Kategori Adı</th>
-            <th>İşlemler</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var category in Model)
-        {
-            <tr>
-                <td>@category.CategoryName</td>
-                <td>
-                    <a href="@Url.Action("CategoryEdit", "Home", new { id = category.CategoryID })" class="btn btn-warning">Düzenle</a>
-                    <form action="@Url.Action("CategoryDelete", "Home", new { id = category.CategoryID })" method="post" style="display:inline;">
-                        <input type="submit" value="Sil" class="btn btn-danger" />
-                        @Html.AntiForgeryToken()
-                    </form>
-                </td>
-            </tr>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        .container {
+            margin-top: 30px;
         }
 
-    </tbody>
-</table>
+        .table thead th {
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+        }
+
+        .table tbody tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+            .btn-primary:hover {
+                background-color: #0056b3;
+                border-color: #004085;
+            }
+
+        .btn-warning {
+            background-color: #ffc107;
+            border-color: #ffc107;
+        }
+
+            .btn-warning:hover {
+                background-color: #e0a800;
+                border-color: #d39e00;
+            }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+            .btn-danger:hover {
+                background-color: #c82333;
+                border-color: #bd2130;
+            }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Kategoriler</h1>
+
+        <p class="text-center mb-4">
+            <a href="@Url.Action("CategoryCreate", "Home")" class="btn btn-primary">Yeni Kategori Oluştur</a>
+        </p>
+
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Kategori Adı</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var category in Model)
+                    {
+                        <tr>
+                            <td>@category.CategoryName</td>
+                            <td class="text-center">
+                                <a href="@Url.Action("CategoryEdit", "Home", new { id = category.CategoryID })" class="btn btn-warning me-2">Düzenle</a>
+                                <form action="@Url.Action("CategoryDelete", "Home", new { id = category.CategoryID })" method="post" style="display:inline;">
+                                    <input type="submit" value="Sil" class="btn btn-danger" />
+                                    @Html.AntiForgeryToken()
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

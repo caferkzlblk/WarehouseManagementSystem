@@ -34,6 +34,7 @@ builder.Services.AddSwaggerGen(c =>
         Title = "My API",
         Version = "v1"
     });
+    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
 });
 
 builder.Services.AddControllersWithViews();
