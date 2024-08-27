@@ -19,9 +19,13 @@ namespace WarehouseManagementSystem.Data
         public DbSet<Users> Users { get; set; }
         public DbSet<Statuses> Statuses { get; set; }
         public DbSet<OrderNumber> OrderNumbers { get; set; }
+        public DbSet<Shipment> Shipments { get; set; }
+        public DbSet<ShippingCompany> ShippingCompanies { get; set; }
+        public DbSet<ShippingRates> ShippingRates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Product ilişkileri
             modelBuilder.Entity<Product>()
                 .HasOne(p => p.Category)
                 .WithMany(c => c.Products)
@@ -32,24 +36,38 @@ namespace WarehouseManagementSystem.Data
                 .WithMany(s => s.Products)
                 .HasForeignKey(p => p.SupplierID);
 
+            modelBuilder.Entity<Product>()
+                .HasMany(p => p.OrderDetails)
+                .WithOne(od => od.Product)
+                .HasForeignKey(od => od.ProductID);
+
+            // OrderDetails ilişkileri
             modelBuilder.Entity<OrderDetails>()
                 .HasOne(od => od.Order)
                 .WithMany(o => o.OrderDetails)
-                .HasForeignKey(od => od.OrderID);
+                .HasForeignKey(od => od.OrderID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Shipment>()
+           .HasOne(s => s.Status)
+           .WithMany(st => st.Shipments)
+           .HasForeignKey(s => s.StatusID)
+           .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<OrderDetails>()
                 .HasOne(od => od.Product)
                 .WithMany(p => p.OrderDetails)
                 .HasForeignKey(od => od.ProductID);
 
-            modelBuilder.Entity<Users>()
-                .HasOne(u => u.Role)
-                .WithMany(r => r.Users)
-                .HasForeignKey(u => u.RoleID);
+            // Order ilişkileri
+            modelBuilder.Entity<Order>()
+                .HasMany(o => o.OrderDetails)
+                .WithOne(od => od.Order)
+                .HasForeignKey(od => od.OrderID);
 
             modelBuilder.Entity<Order>()
-                .HasOne(o => o.Statuses)
-                .WithMany()
+                .HasOne(o => o.Status)
+                .WithMany(s => s.Orders)
                 .HasForeignKey(o => o.StatusID);
 
             modelBuilder.Entity<Order>()
@@ -57,7 +75,22 @@ namespace WarehouseManagementSystem.Data
                 .WithOne(on => on.Order)
                 .HasForeignKey<Order>(o => o.OrderNumberID)
                 .OnDelete(DeleteBehavior.Cascade);
-        }
 
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.ShippingCompany)
+                .WithMany() // Burada `WithMany()` yerine `WithOne()` kullanmayı düşünün
+                .HasForeignKey(o => o.ShippingCompanyID);
+
+            // Statuses ilişkileri
+            modelBuilder.Entity<Statuses>()
+                .HasMany(s => s.Orders)
+                .WithOne(o => o.Status)
+                .HasForeignKey(o => o.StatusID);
+
+            modelBuilder.Entity<ShippingRates>()
+            .HasOne(sr => sr.ShippingCompany)
+            .WithMany()
+            .HasForeignKey(sr => sr.ShippingCompanyID);
+        }
     }
 }

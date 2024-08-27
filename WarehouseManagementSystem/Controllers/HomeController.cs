@@ -1,4 +1,6 @@
 using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.EMMA;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
@@ -41,7 +43,7 @@ namespace WarehouseManagementSystem.Controllers
             }
 
             var ordersToExport = await filteredOrders
-                .Include(o => o.Statuses)
+                .Include(o => o.Status)
                 .Include(o => o.OrderDetails)
                 .ThenInclude(od => od.Product)
                 .ToListAsync();
@@ -65,7 +67,7 @@ namespace WarehouseManagementSystem.Controllers
                     {
                         worksheet.Cells[row, 1].Value = order.OrderDate.ToString("yyyy-MM-dd");
                         worksheet.Cells[row, 2].Value = order.CustomerID;
-                        worksheet.Cells[row, 3].Value = order.Statuses.StatusName;
+                        worksheet.Cells[row, 3].Value = order.Status.StatusName;
                         worksheet.Cells[row, 4].Value = detail.Product.ProductName;
                         worksheet.Cells[row, 5].Value = detail.Quantity;
                         row++;
@@ -192,7 +194,8 @@ namespace WarehouseManagementSystem.Controllers
                 context.Update(category);
                 await context.SaveChangesAsync();
 
-                return View(category);
+                return RedirectToAction(nameof(Categories));
+
             }
             else if(roleID == 2)
             {
@@ -202,6 +205,7 @@ namespace WarehouseManagementSystem.Controllers
             {
                 return NotFound();
             }
+            
         }
         
        
@@ -271,7 +275,7 @@ namespace WarehouseManagementSystem.Controllers
             {
                 return NotFound();
             }
-            var suppliers = context.Suppliers.ToListAsync();
+            var suppliers = await context.Suppliers.FirstOrDefaultAsync(s => s.SupplierID == id);
             if (suppliers == null)
             {
                 return NotFound();
@@ -294,9 +298,9 @@ namespace WarehouseManagementSystem.Controllers
 
                 context.Update(supplier);
                 await context.SaveChangesAsync();
-                return RedirectToAction(nameof(Supplier));
+                return RedirectToAction(nameof(Suppliers));
 
-                return View(supplier);
+               
             }
             else if (roleID == 2)
             {
@@ -385,7 +389,9 @@ namespace WarehouseManagementSystem.Controllers
             {
                 return NotFound();
             }
-            ViewBag.Roles = context.Roles.ToListAsync();
+            var roles = await context.Roles.ToListAsync();
+            ViewBag.Roles = roles;
+
             return View(user);
         }
         [HttpPost]
@@ -514,7 +520,7 @@ namespace WarehouseManagementSystem.Controllers
 
                 return RedirectToAction(nameof(Roles));
 
-                return View(role);
+                
             }
             else if (roleID == 2)
             {
@@ -554,22 +560,32 @@ namespace WarehouseManagementSystem.Controllers
         }
         public async Task<IActionResult> Orders(int? customerID, int? statusID, DateTime? startDate, DateTime? endDate)
         {
-
+            var orders = await context.Orders
+    .Include(o => o.Shipment)
+    .ThenInclude(s => s.ShippingCompany)
+    .ToListAsync();
+            var shippingRates = context.ShippingRates.ToList();
+            Console.WriteLine($"customerID: {customerID}");
+            Console.WriteLine($"statusID: {statusID}");
+            Console.WriteLine($"startDate: {startDate}");
+            Console.WriteLine($"endDate: {endDate}");
+            // Veritabanýndan sipariþ ürün özetlerini al
             var orderProducts = await context.OrderDetails
                 .Include(od => od.Order)
-                .Include(od=> od.Product)
-                .Select(od=> new OrderProductSummaryViewModel
-            {
-                ProductName = od.Product.ProductName,
-                Quantity= od.Quantity,
-                OrderDate= od.Order.OrderDate,
-            }).ToListAsync();
-            // Sipariþler üzerinde filtreleme iþlemi yapýlacak
-       
+                .Include(od => od.Product)
+
+                .Select(od => new OrderProductSummaryViewModel
+                {
+                    ProductName = od.Product.ProductName,
+                    Quantity = od.Quantity,
+                    OrderDate = od.Order.OrderDate,
+                }).ToListAsync();
+
+            // Sipariþleri filtreleme için sorgu oluþtur
             var ordersQuery = context.Orders.AsQueryable();
             int? currentRoleID = HttpContext.Session.GetInt32("RoleID");
-            ViewData["CurrentRoleID"] = currentRoleID;
-            // Filtreleme iþlemleri
+            ViewBag.CurrentRoleID = currentRoleID;
+
             if (customerID.HasValue)
             {
                 ordersQuery = ordersQuery.Where(o => o.CustomerID == customerID.Value);
@@ -587,25 +603,25 @@ namespace WarehouseManagementSystem.Controllers
                 ordersQuery = ordersQuery.Where(o => o.OrderDate <= endDate.Value);
             }
 
-            // Filtrelenmiþ sipariþlerin yüklenmesi
             var filteredOrders = await ordersQuery
-                .Include(o => o.Statuses)
+                .Include(o => o.Status)
                 .Include(o => o.OrderDetails)
+
                 .ThenInclude(od => od.Product)
                 .ToListAsync();
 
-            // ViewModel oluþturulmasý
             var viewModel = new OrderFilterViewModel
             {
-               
                 Orders = filteredOrders,
-                Statuses = await context.Statuses.ToListAsync(),
-                // Diðer gerekli veriler buraya eklenebilir
+                Status = await context.Statuses.ToListAsync(),
+                OrderProductSummary = orderProducts, // Bu ekleme gerekebilir
+                ShippingRates = shippingRates,
+               
             };
 
-            // Sayfanýn gönderilmesi
-            return View(viewModel); // `View(viewModel, "_OrderList")` yerine `View(viewModel)` kullanýmý, `_OrderList` isimli bir partial view kullanýmý varsa ona uygun deðiþiklikler yapýlabilir
+            return View(viewModel);
         }
+
         [HttpGet]
         public async Task<IActionResult> GetOrderProductSummaryData()
         {
@@ -626,27 +642,24 @@ namespace WarehouseManagementSystem.Controllers
         [HttpGet]
         public IActionResult OrderCreate()
         {
+            ViewBag.ShippingCompanies = context.ShippingCompanies.ToList();
+
             var viewModel = new OrderCreateViewModel
             {
-                Order = new Order(),
-                AvailableProducts = context.Products.ToList()
+                Order = new Models.Order(),
+                AvailableProducts = context.Products.ToList(),
+                ShippingCompanies = context.ShippingCompanies.ToList()
             };
-            var products = context.Products.ToList();
-            //var statuses = context.Statuses.ToList();
-            //ViewBag.Statuses = statuses;
-            ViewBag.Products = products;
+
             return View(viewModel);
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-
-
         public async Task<IActionResult> OrderCreate(OrderCreateViewModel viewModel, string selectedQuantities, string selectedProductIDs)
         {
-            Console.WriteLine($"SelectedProductIDs: {selectedProductIDs}");
-            Console.WriteLine($"SelectedQuantities: {selectedQuantities}");
-          
-            viewModel.Order.StatusID = 1;
+            ViewBag.ShippingCompanies = context.ShippingCompanies.ToList();
+
             var roleID = HttpContext.Session.GetInt32("RoleID");
 
             if (roleID == 1)
@@ -668,56 +681,48 @@ namespace WarehouseManagementSystem.Controllers
                     return View(viewModel);
                 }
 
-                // Yeni sipariþi ekle
+                // Sipariþi ekle ve kaydet
+                viewModel.Order.StatusID = 1; // Baþlangýçta durum 1 olarak ayarlanýr
                 context.Orders.Add(viewModel.Order);
-                await context.SaveChangesAsync(); // Sipariþin ID'sini almak için
+                await context.SaveChangesAsync();
 
-                // Sipariþ numarasý oluþtur
+                // Sipariþ numarasýný oluþtur
                 var orderNumber = new OrderNumber
                 {
                     OrderID = viewModel.Order.OrderID,
-                    GeneratedOrderNumber = GenerateOrderNumber(),  // Parametresiz çaðrým
+                    GeneratedOrderNumber = GenerateOrderNumber(),
                     CreatedAt = DateTime.Now,
-                    OrderNumberValue = GenerateOrderNumber()  // Parametresiz çaðrým
+                    OrderNumberValue = GenerateOrderNumber()
                 };
-               
 
-                // Sipariþ numarasýný ekle
+                // Sipariþ numarasýný ekle ve güncelle
                 context.OrderNumbers.Add(orderNumber);
-                
-                
-                await context.SaveChangesAsync(); // Sipariþ numarasýnýn ID'sini almak için
+                await context.SaveChangesAsync();
 
-                // Sipariþ numarasýný sipariþe iliþkilendir
                 viewModel.Order.OrderNumberID = orderNumber.OrderNumberID;
+                viewModel.Order.OrderNumberValue = orderNumber.OrderNumberValue;
                 context.Orders.Update(viewModel.Order);
-                await context.SaveChangesAsync();
-                var order = context.Orders.Find(viewModel.Order.OrderID);
-                order.OrderNumberID = orderNumber.OrderNumberID;
-                order.OrderNumberValue = orderNumber.OrderNumberValue;
-                context.Orders.Update(order);
-                await context.SaveChangesAsync();
+                await context.SaveChangesAsync(); // Güncellemeyi kaydedin
 
                 // Sipariþ detaylarýný ekle
-                for (int i = 0; i < productIDs.Count; i++)
+                foreach (var productID in productIDs)
                 {
-                    var productID = productIDs[i];
-                    var quantity = quantities[i];
-
-                    var orderDetails = new OrderDetails
-                    {
-                        OrderID = viewModel.Order.OrderID,
-                        ProductID = productID,
-                        Quantity = quantity,
-                        Price = (await context.Products.FindAsync(productID))?.Price ?? 0
-                    };
-
+                    var quantity = quantities[productIDs.IndexOf(productID)];
                     var product = await context.Products.FindAsync(productID);
+
                     if (product != null && product.QuantityInStock >= quantity)
                     {
+                        var orderDetails = new OrderDetails
+                        {
+                            OrderID = viewModel.Order.OrderID,
+                            ProductID = productID,
+                            StatusID = 1,  // Sipariþ oluþturulurken baþlangýç durumu
+                            Quantity = quantity,
+                            Price = product.Price
+                        };
+
                         product.QuantityInStock -= quantity;
                         context.OrderDetails.Add(orderDetails);
-                        await context.SaveChangesAsync();
                     }
                     else
                     {
@@ -725,6 +730,17 @@ namespace WarehouseManagementSystem.Controllers
                         viewModel.AvailableProducts = context.Products.ToList();
                         return View(viewModel);
                     }
+                }
+
+                // ShippingCost Hesaplama
+                var shippingRate = await context.ShippingRates.FirstOrDefaultAsync(sr => sr.ShippingCompanyID == viewModel.Order.ShippingCompanyID);
+                if (shippingRate != null)
+                {
+                    int productCount = productIDs.Count;
+                    decimal shippingCost = (decimal)shippingRate.Rate * productCount;
+                    viewModel.Order.TotalCost = shippingCost;
+                    context.Orders.Update(viewModel.Order); // Update iþlemi kullanýn
+                    await context.SaveChangesAsync();
                 }
 
                 return RedirectToAction(nameof(Orders));
@@ -737,6 +753,17 @@ namespace WarehouseManagementSystem.Controllers
             {
                 return NotFound();
             }
+        }
+
+
+
+
+
+
+
+        private string GenerateShipmentNumber()
+        {
+            return "SN" + DateTime.Now.Ticks;
         }
 
         private string GenerateOrderNumber(int length)
@@ -775,7 +802,7 @@ namespace WarehouseManagementSystem.Controllers
         }
         [HttpPost, ActionName("OrderEdit")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> OrderEdit(int id, [Bind("OrderID,OrderDate,CustomerID,StatusID")] Order order)
+        public async Task<IActionResult> OrderEdit(int id, [Bind("OrderID,OrderDate,CustomerID,StatusID")] Models.Order order)
          {
             var roleID = HttpContext.Session.GetInt32("RoleID");
             if (roleID == 1)
@@ -918,8 +945,8 @@ namespace WarehouseManagementSystem.Controllers
                 return NotFound();
             }
 
-            ViewBag.Categories = context.Categories.ToListAsync();
-            ViewBag.Suppliers = context.Suppliers.ToListAsync();
+            ViewBag.Categories = await context.Categories.ToListAsync();
+            ViewBag.Suppliers = await context.Suppliers.ToListAsync();
             return View(product);
         }
         [HttpPost]
@@ -1032,46 +1059,220 @@ namespace WarehouseManagementSystem.Controllers
             return $"{timestamp}{random}";
         }
         [HttpPost]
-        public IActionResult UpdateOrderStatus(string orderNumberValue)
+        public async Task<IActionResult> UpdateOrderStatus(string orderNumberValue, int orderID, int newStatusID)
         {
-           
+            var orderid = context.Orders.FirstOrDefault(o => o.OrderNumber.OrderNumberValue == orderNumberValue).OrderID;
+            orderID = orderid;
             var order = context.Orders
+                .Include(o => o.Shipment)
                 .Include(o => o.OrderNumber)
-                .FirstOrDefault(o => o.OrderNumber.OrderNumberValue == orderNumberValue);
+                .FirstOrDefault(o => o.OrderNumber.OrderNumberValue == orderNumberValue && o.OrderID == orderID);
 
             if (order == null)
             {
-               
                 return NotFound();
             }
 
-            
+            // Determine the new status
             if (order.StatusID == 1)
             {
-                order.StatusID = 2; 
+                order.StatusID = 2;
             }
-            else if (order.StatusID == 2)
+            else if ( order.StatusID == 2)
             {
-                order.StatusID = 3; 
+                order.StatusID = 3;
+
+                // Create a new shipment if the status is being updated to 3
+               
             }
             else if (order.StatusID == 3)
             {
-                order.StatusID = 4; 
+                order.StatusID = 4;
             }
-            else if (order.StatusID == 4)
-            {
-                order.StatusID = 5; 
-            }
-            
-
            
-            context.SaveChanges();
-
+            else
+            {
+                // Invalid status transition
+                ModelState.AddModelError("", "Geçersiz durum geçiþi.");
+                return View(); // Redirect to an error page or view
+            }
+            if (order.StatusID == 3)
+            {
+                newStatusID = order.StatusID;
+                var shipment = new Shipment
+                {
+                    OrderID = order.OrderID,
+                    ShipmentNumber = GenerateShipmentNumber(),
+                    ShipmentDate = DateTime.UtcNow,
+                    ShippingCompanyID = order.ShippingCompanyID,
+                    StatusID = newStatusID
+                };
+                context.Shipments.Add(shipment);
+            }
+       
+           
             
+
+            // Save changes to the database
+            await context.SaveChangesAsync();
+
             return RedirectToAction("Orders");
         }
 
+        public IActionResult GetShippingCost(int shippingCompanyID, int productCount)
+        {
+            var rate = context.ShippingRates
+                .Where(r => r.ShippingCompanyID == shippingCompanyID)
+                .FirstOrDefault();
 
+            if (rate == null)
+            {
+                return Json(new { shippingCost = 0 });
+            }
+
+            // Assuming rate.Rate is the base cost and it increases per product
+            decimal shippingCost = (decimal)rate.Rate * (decimal)productCount;
+
+            return Json(new { shippingCost = shippingCost });
+        }
+
+
+
+
+        public async Task<IActionResult> ShipmentDetails(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var shipment = await context.Shipments
+                .Include(s => s.Order)
+                .Include(s => s.ShippingCompany)
+                .FirstOrDefaultAsync(m => m.ShipmentID == id);
+            if (shipment == null)
+            {
+                return NotFound();
+            }
+
+            return View(shipment);
+        }
+
+        // GET: Shipment/Create
+        public IActionResult ShipmentCreate()
+        {
+            ViewBag.Orders = context.Orders.ToList();
+            ViewBag.ShippingCompanies = context.ShippingCompanies.ToList();
+            return View();
+        }
+
+        // POST: Shipment/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("OrderID,ShipmentNumber,ShipmentDate,ShippingCompanyID")] Shipment shipment)
+        {
+            if (ModelState.IsValid)
+            {
+                context.Add(shipment);
+                await context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+
+            ViewBag.Orders = context.Orders.ToList();
+            ViewBag.ShippingCompanies = context.ShippingCompanies.ToList();
+            return View(shipment);
+        }
+
+        // GET: Shipment/Edit/5
+        public async Task<IActionResult> ShipmentEdit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var shipment = await context.Shipments.FindAsync(id);
+            if (shipment == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.Orders = context.Orders.ToList();
+            ViewBag.ShippingCompanies = context.ShippingCompanies.ToList();
+            return View(shipment);
+        }
+
+        // POST: Shipment/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ShipmentEdit(int id, [Bind("ShipmentId,OrderID,ShipmentNumber,ShipmentDate,ShippingCompanyID")] Shipment shipment)
+        {
+            if (id != shipment.ShipmentID)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    context.Update(shipment);
+                    await context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!ShipmentExists(shipment.ShipmentID))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index));
+            }
+
+            ViewBag.Orders = context.Orders.ToList();
+            ViewBag.ShippingCompanies = context.ShippingCompanies.ToList();
+            return View(shipment);
+        }
+
+        // GET: Shipment/Delete/5
+        public async Task<IActionResult> ShipmentDelete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var shipment = await context.Shipments
+                .Include(s => s.Order)
+                .Include(s => s.ShippingCompany)
+                .FirstOrDefaultAsync(m => m.ShipmentID == id);
+            if (shipment == null)
+            {
+                return NotFound();
+            }
+
+            return View(shipment);
+        }
+
+        // POST: Shipment/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ShipmentDelete(int id)
+        {
+            var shipment = await context.Shipments.FindAsync(id);
+           context.Shipments.Remove(shipment);
+            await context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+        private bool ShipmentExists(int id)
+        {
+            return context.Shipments.Any(e => e.ShipmentID == id);
+        }
 
     }
 }

@@ -12,8 +12,8 @@ using WarehouseManagementSystem.Data;
 namespace WarehouseManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240815081342_FixOrderNumberRelationship")]
-    partial class FixOrderNumberRelationship
+    [Migration("20240823104300_InitialCreate1")]
+    partial class InitialCreate1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -56,7 +56,13 @@ namespace WarehouseManagementSystem.Migrations
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("OrderNumberID")
+                    b.Property<int?>("OrderNumberID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OrderNumberValue")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("ShippingCompanyID")
                         .HasColumnType("int");
 
                     b.Property<int>("StatusID")
@@ -66,6 +72,8 @@ namespace WarehouseManagementSystem.Migrations
 
                     b.HasIndex("OrderNumberID")
                         .IsUnique();
+
+                    b.HasIndex("ShippingCompanyID");
 
                     b.HasIndex("StatusID");
 
@@ -92,10 +100,7 @@ namespace WarehouseManagementSystem.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
-                    b.Property<int?>("StatusesStatusID")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("StatusesStatusID1")
+                    b.Property<int>("StatusID")
                         .HasColumnType("int");
 
                     b.HasKey("OrderDetailsID");
@@ -104,9 +109,7 @@ namespace WarehouseManagementSystem.Migrations
 
                     b.HasIndex("ProductID");
 
-                    b.HasIndex("StatusesStatusID");
-
-                    b.HasIndex("StatusesStatusID1");
+                    b.HasIndex("StatusID");
 
                     b.ToTable("OrderDetails");
                 });
@@ -125,6 +128,9 @@ namespace WarehouseManagementSystem.Migrations
                     b.Property<string>("GeneratedOrderNumber")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<int>("OrderID")
+                        .HasColumnType("int");
 
                     b.Property<string>("OrderNumberValue")
                         .IsRequired()
@@ -187,6 +193,71 @@ namespace WarehouseManagementSystem.Migrations
                     b.HasKey("RoleID");
 
                     b.ToTable("Roles");
+                });
+
+            modelBuilder.Entity("WarehouseManagementSystem.Models.Shipment", b =>
+                {
+                    b.Property<int>("ShipmentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ShipmentID"));
+
+                    b.Property<int>("OrderID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ShipmentDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ShipmentNumber")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int>("ShippingCompanyID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("ShipmentID");
+
+                    b.HasIndex("OrderID")
+                        .IsUnique();
+
+                    b.HasIndex("ShippingCompanyID");
+
+                    b.ToTable("Shipments");
+                });
+
+            modelBuilder.Entity("WarehouseManagementSystem.Models.ShippingCompany", b =>
+                {
+                    b.Property<int>("ShippingCompanyID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ShippingCompanyID"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("ShippingCompanyID");
+
+                    b.ToTable("ShippingCompanies");
                 });
 
             modelBuilder.Entity("WarehouseManagementSystem.Models.Statuses", b =>
@@ -257,18 +328,25 @@ namespace WarehouseManagementSystem.Migrations
                     b.HasOne("WarehouseManagementSystem.Models.OrderNumber", "OrderNumber")
                         .WithOne("Order")
                         .HasForeignKey("WarehouseManagementSystem.Models.Order", "OrderNumberID")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("WarehouseManagementSystem.Models.ShippingCompany", "ShippingCompany")
+                        .WithMany()
+                        .HasForeignKey("ShippingCompanyID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WarehouseManagementSystem.Models.Statuses", "Statuses")
-                        .WithMany()
+                    b.HasOne("WarehouseManagementSystem.Models.Statuses", "Status")
+                        .WithMany("Orders")
                         .HasForeignKey("StatusID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("OrderNumber");
 
-                    b.Navigation("Statuses");
+                    b.Navigation("ShippingCompany");
+
+                    b.Navigation("Status");
                 });
 
             modelBuilder.Entity("WarehouseManagementSystem.Models.OrderDetails", b =>
@@ -285,17 +363,17 @@ namespace WarehouseManagementSystem.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WarehouseManagementSystem.Models.Statuses", null)
-                        .WithMany("OrderDetails")
-                        .HasForeignKey("StatusesStatusID");
-
-                    b.HasOne("WarehouseManagementSystem.Models.Statuses", null)
-                        .WithMany("Orders")
-                        .HasForeignKey("StatusesStatusID1");
+                    b.HasOne("WarehouseManagementSystem.Models.Statuses", "Status")
+                        .WithMany()
+                        .HasForeignKey("StatusID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Order");
 
                     b.Navigation("Product");
+
+                    b.Navigation("Status");
                 });
 
             modelBuilder.Entity("WarehouseManagementSystem.Models.Product", b =>
@@ -317,6 +395,25 @@ namespace WarehouseManagementSystem.Migrations
                     b.Navigation("Supplier");
                 });
 
+            modelBuilder.Entity("WarehouseManagementSystem.Models.Shipment", b =>
+                {
+                    b.HasOne("WarehouseManagementSystem.Models.Order", "Order")
+                        .WithOne("Shipment")
+                        .HasForeignKey("WarehouseManagementSystem.Models.Shipment", "OrderID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WarehouseManagementSystem.Models.ShippingCompany", "ShippingCompany")
+                        .WithMany()
+                        .HasForeignKey("ShippingCompanyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("ShippingCompany");
+                });
+
             modelBuilder.Entity("WarehouseManagementSystem.Models.Users", b =>
                 {
                     b.HasOne("WarehouseManagementSystem.Models.Role", "Role")
@@ -336,6 +433,8 @@ namespace WarehouseManagementSystem.Migrations
             modelBuilder.Entity("WarehouseManagementSystem.Models.Order", b =>
                 {
                     b.Navigation("OrderDetails");
+
+                    b.Navigation("Shipment");
                 });
 
             modelBuilder.Entity("WarehouseManagementSystem.Models.OrderNumber", b =>
@@ -356,8 +455,6 @@ namespace WarehouseManagementSystem.Migrations
 
             modelBuilder.Entity("WarehouseManagementSystem.Models.Statuses", b =>
                 {
-                    b.Navigation("OrderDetails");
-
                     b.Navigation("Orders");
                 });
 

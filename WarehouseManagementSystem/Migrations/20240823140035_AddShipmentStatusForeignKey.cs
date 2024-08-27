@@ -5,7 +5,7 @@
 namespace WarehouseManagementSystem.Migrations
 {
     /// <inheritdoc />
-    public partial class UpdateForeignKeys : Migration
+    public partial class AddShipmentStatusForeignKey : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -1,28 +1,25 @@
 ﻿@model WarehouseManagementSystem.Models.OrderFilterViewModel
 
-
 @{
     ViewData["Title"] = "Siparişler";
-    
-    // Kullanıcının rol ID'sini al (örneğin, bunu session'dan veya ViewData'dan alabilirsiniz)
     int? currentRoleID = ViewData["CurrentRoleID"] as int?;
 }
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <div class="container mt-5">
     <h1 class="mb-4">@ViewData["Title"]</h1>
-   
+
     <h2>Sipariş Durumunu Güncelle</h2>
     @using (Html.BeginForm("UpdateOrderStatus", "Home", FormMethod.Post))
     {
         @Html.AntiForgeryToken()
 
         <div class="form-group">
-            @Html.LabelFor(model => model.OrderNumberValue, "Order Number")
+            @Html.LabelFor(model => model.OrderNumberValue, "Sipariş Numarası")
             @Html.TextBoxFor(model => model.OrderNumberValue, new { @class = "form-control" })
-            <button type="submit" class="btn btn-primary">Update Status</button>
+            <button type="submit" class="btn btn-primary">Durumu Güncelle</button>
         </div>
-
-        
     }
 
     <!-- Sonuç Mesajları -->
@@ -38,11 +35,11 @@
             @TempData["Error"]
         </div>
     }
-</div>
+
     <!-- Filtreleme Formu -->
     <form asp-action="Orders" method="get">
         <div class="mb-3">
-            @if (currentRoleID == 1)  // Yönetici için sadece sipariş oluşturma butonu görünsün
+            @if (currentRoleID == 1) // Yönetici için sadece sipariş oluşturma butonu görünsün
             {
                 <a href="@Url.Action("OrderCreate", "Home")" class="btn btn-success">
                     <i class="bi bi-plus-circle"></i> Yeni Sipariş Oluştur
@@ -60,7 +57,7 @@
             <label for="statusID">Durum ID</label>
             <select id="statusID" name="statusID" class="form-control">
                 <option value="">Seçiniz</option>
-                @foreach (var status in Model.Statuses)
+                @foreach (var status in Model.Status)
                 {
                     <option value="@status.StatusID" selected="@(status.StatusID == Model.StatusID)">@status.StatusName</option>
                 }
@@ -78,17 +75,19 @@
         </div>
     </form>
 
-    
+    <!-- Sipariş Tablosu -->
     <div class="table-responsive mt-4">
         <table class="table table-hover table-bordered">
             <thead class="thead-dark">
                 <tr>
                     <th>Sipariş Tarihi</th>
                     <th>Durum</th>
-                    <th>Ürün Adı</th>
-                    <th>Miktar</th>
+                    <th>Ürünler</th>
+                    <th>Miktarlar</th>
                     <th>Müşteri ID</th>
                     <th>Sipariş Numarası</th>
+                    <th>Gönderi Şirketi</th>
+                    <th>Gönderi Ücreti</th>
                     <th>İşlemler</th>
                 </tr>
             </thead>
@@ -97,44 +96,78 @@
                 {
                     @foreach (var order in Model.Orders)
                     {
-                        @foreach (var detail in order.OrderDetails)
-                        {
-                            <tr>
-                                <td>@order.OrderDate.ToShortDateString()</td>
-                                <td>@order.Statuses?.StatusName</td>
-                                <td>@detail.Product.ProductName</td>
-                                <td>@detail.Quantity</td>
-                                <td>@detail.Order.CustomerID</td>
-                                <td>@order.OrderNumberValue</td>
-                                <td class="text-center">
-                                   
-                                    @if (currentRoleID == 2)  
-                                    {
-                                        <form action="@Url.Action("ProcessOrder", "Home", new { id = order.OrderID })" method="post">
-                                            <button type="submit" class="btn btn-primary btn-sm">Bir Sonraki Aşamaya Geç</button>
-                                        </form>
+                        <tr>
+                            <td>@order.OrderDate.ToShortDateString()</td>
+                            <td>@order.Status?.StatusName</td>
+                            <td>
+                                @foreach (var detail in order.OrderDetails)
+                                {
+                                    <div>@detail.Product.ProductName</div>
+                                }
+                            </td>
+                            <td>
+                                @foreach (var detail in order.OrderDetails)
+                                {
+                                    <div>@detail.Quantity</div>
+                                }
+                            </td>
+                            <td>@order.CustomerID</td>
+                            <td>@order.OrderNumberValue</td>
 
-                                    }
-                                    
-                                    @if (currentRoleID == 1)  
-                                    {
-                                        <a href="@Url.Action("OrderEdit", "Home", new { id = order.OrderID })" class="btn btn-warning btn-sm">
-                                            <i class="bi bi-pencil"></i> Düzenle
-                                        </a>
-                                        <form action="@Url.Action("OrderDelete", "Home", new { id = order.OrderID })" method="post" style="display:inline;">
-                                            <input type="submit" value="Sil" class="btn btn-danger btn-sm" />
-                                            @Html.AntiForgeryToken()
-                                        </form>
+                            @if (order.StatusID == 3 || order.StatusID == 4)
+                            {
+                                <td>@order.ShippingCompany?.CompanyName</td>
+                                <td>
+                                    @{
+                                        var shippingRates = Model.ShippingRates
+                                        .Where(sr => sr.ShippingCompanyID == order.ShippingCompanyID)
+                                        .ToList();
+                                        var totalShippingCost = 0m;
+
+                                        foreach (var detail in order.OrderDetails)
+                                        {
+                                            var rate = shippingRates
+                                            .FirstOrDefault(sr => detail.Quantity >= sr.MinProductCount && detail.Quantity <= sr.MaxProductCount)?.Rate
+                                            ?? 0;
+
+                                            totalShippingCost += (decimal)rate;
+                                        }
+
+                                        @totalShippingCost
                                     }
                                 </td>
-                            </tr>
-                        }
+                            }
+                            else
+                            {
+                                <td>-</td>
+                                <td>-</td>
+                            }
+
+                            <td class="text-center">
+                                @if (currentRoleID == 2)
+                                {
+                                    <form action="@Url.Action("ProcessOrder", "Home", new { id = order.OrderID })" method="post">
+                                        <button type="submit" class="btn btn-primary btn-sm">Bir Sonraki Aşamaya Geç</button>
+                                    </form>
+                                }
+                                @if (currentRoleID == 1)
+                                {
+                                    <a href="@Url.Action("OrderEdit", "Home", new { id = order.OrderID })" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-pencil"></i> Düzenle
+                                    </a>
+                                    <form action="@Url.Action("OrderDelete", "Home", new { id = order.OrderID })" method="post" style="display:inline;">
+                                        <input type="submit" value="Sil" class="btn btn-danger btn-sm" />
+                                        @Html.AntiForgeryToken()
+                                    </form>
+                                }
+                            </td>
+                        </tr>
                     }
                 }
                 else
                 {
                     <tr>
-                        <td colspan="5" class="text-center">Filtreye uyan sipariş bulunamadı.</td>
+                        <td colspan="9" class="text-center">Filtreye uyan sipariş bulunamadı.</td>
                     </tr>
                 }
             </tbody>
@@ -147,12 +180,14 @@
         </a>
     </div>
 </div>
+
 <div class="container mt-5">
     <h2>Sipariş Ürün Özeti</h2>
 
     <!-- Grafik -->
     <canvas id="orderProductChart" width="400" height="200"></canvas>
 </div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         fetch('/Home/GetOrderProductSummaryData')

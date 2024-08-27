@@ -8,6 +8,7 @@
 
 <form asp-action="RoleEdit" method="post">
     <div class="form-group">
+        <input type="hidden" asp-for="RoleID" />
         <label asp-for="RoleName" class="control-label"></label>
         <input asp-for="RoleName" class="form-control" />
         <span asp-validation-for="RoleName" class="text-danger"></span>

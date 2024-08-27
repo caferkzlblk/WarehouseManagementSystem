@@ -12,18 +12,24 @@ namespace WarehouseManagementSystem.Models
 
         public int CustomerID { get; set; }
 
-        public int StatusID { get; set; }
 
-        public Statuses? Statuses { get; set; }
+        public decimal TotalCost { get; set; }
+
+        public int StatusID { get; set; }
+        [ForeignKey("StatusID")]
+        public Statuses Status { get; set; } // Navigation property
 
         public string? OrderNumberValue { get; set; }
 
-        public int? OrderNumberID { get; set; } // Nullable because it may be assigned later
+        public int ShippingCompanyID { get; set; }
+        [ForeignKey("ShippingCompanyID")]
+        public ShippingCompany ShippingCompany { get; set; } // Navigation property
 
+        public int? OrderNumberID { get; set; } // Nullable because it may be assigned later
         [ForeignKey("OrderNumberID")]
         public OrderNumber? OrderNumber { get; set; } // Navigation property
 
-        // Navigation property
         public ICollection<OrderDetails> OrderDetails { get; set; } = new List<OrderDetails>();
+        public Shipment? Shipment { get; set; }
     }
 }

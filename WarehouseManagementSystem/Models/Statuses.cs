@@ -5,12 +5,11 @@ namespace WarehouseManagementSystem.Models
     public class Statuses
     {
         [Key]
-        
         public int StatusID { get; set; }
         public string StatusName { get; set; }
 
-        public ICollection<OrderDetails> Orders { get; set; }
-        public ICollection<OrderDetails> OrderDetails { get; set; }
+        public ICollection<Order> Orders { get; set; } = new List<Order>();
+        public ICollection<Shipment> Shipments { get; set; }
 
     }
 }

@@ -32,6 +32,7 @@
     <div class="form-group">
         <label asp-for="CategoryID" class="control-label"></label>
         <select asp-for="CategoryID" class="form-control">
+            
             @foreach (var category in ViewBag.Categories as IEnumerable<Category>)
             {
                 <option value="@category.CategoryID" selected="@(category.CategoryID == Model.CategoryID)">@category.CategoryName</option>

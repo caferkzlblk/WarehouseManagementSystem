@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# CS8602: Olası bir null başvurunun başvurma işlemi.
+dotnet_diagnostic.CS8602.severity = none
