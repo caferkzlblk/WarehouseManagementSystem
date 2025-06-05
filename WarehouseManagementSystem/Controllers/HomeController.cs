@@ -136,7 +136,7 @@ namespace WarehouseManagementSystem.Controllers
             return View();
         }
 
-        [HttpPost("Category/Create")]
+        [HttpPost("Home/CategoryCreate")]
         [ValidateAntiForgeryToken]
 
         public async Task<IActionResult> CategoryCreate([Bind("CategoryName")] Category category)
