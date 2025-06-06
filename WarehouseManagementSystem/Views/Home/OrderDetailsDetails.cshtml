@@ -1,28 +1,49 @@
 ﻿@model WarehouseManagementSystem.Models.OrderDetails
-
 @{
-    ViewData["Title"] = "Sipariş Detayı";
+    ViewData["Title"] = "Sipariş Ürün Detayı";
 }
 
-<h1>Sipariş Detayı</h1>
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-body">
+                <h3 class="fw-bold mb-4">
+                    <i class="bi bi-eye text-info"></i> Sipariş Ürün Detayı
+                </h3>
+                <dl class="row">
+                    <dt class="col-sm-4">Sipariş No:</dt>
+                    <dd class="col-sm-8">@Model.Order?.OrderNumberValue</dd>
 
-<div>
-    <h2>Sipariş</h2>
-    <p>Sipariş ID: @Model.Order.OrderID</p>
-    <p>Sipariş Tarihi: @Model.Order.OrderDate</p>
-    <p>Müşteri ID: @Model.Order.CustomerID</p>
-    <p>Durum: @Model.Order.StatusID</p>
+                    <dt class="col-sm-4">Sipariş Tarihi:</dt>
+                    <dd class="col-sm-8">@Model.Order?.OrderDate.ToString("dd.MM.yyyy")</dd>
+
+                    <dt class="col-sm-4">Müşteri:</dt>
+                    <dd class="col-sm-8">@Model.Order?.CustomerID</dd>
+
+                    <dt class="col-sm-4">Sipariş Durumu:</dt>
+                    <dd class="col-sm-8">@Model.Order?.Status?.StatusName</dd>
+                </dl>
+
+                <h5 class="mt-4">Ürün Bilgisi</h5>
+                <dl class="row">
+                    <dt class="col-sm-4">Ürün Adı:</dt>
+                    <dd class="col-sm-8">@Model.Product?.ProductName</dd>
+                    <dt class="col-sm-4">Açıklama:</dt>
+                    <dd class="col-sm-8">@Model.Product?.Description</dd>
+                </dl>
+
+                <h5 class="mt-4">Sipariş Detayı</h5>
+                <dl class="row">
+                    <dt class="col-sm-4">Miktar:</dt>
+                    <dd class="col-sm-8">@Model.Quantity</dd>
+                    <dt class="col-sm-4">Birim Fiyat:</dt>
+                    <dd class="col-sm-8">@string.Format("{0:N2} ₺", Model.Price)</dd>
+                    <dt class="col-sm-4">Toplam:</dt>
+                    <dd class="col-sm-8">@string.Format("{0:N2} ₺", Model.Price * Model.Quantity)</dd>
+                </dl>
+
+                <a href="/Home/Orders" class="btn btn-outline-secondary mt-3">Geri Dön</a>
+            </div>
+        </div>
+    </div>
 </div>
-
-<div>
-    <h2>Ürün</h2>
-    <p>Ürün ID: @Model.Product.ProductID</p>
-    <p>Ürün Adı: @Model.Product.ProductName</p>
-    <p>Fiyat: @Model.Price</p>
-    <p>Miktar: @Model.Quantity</p>
-    <p>Toplam Tutar: @(Model.Quantity * Model.Price)</p>
-</div>
-
-<p>
-    <a href="@Url.Action("OrderDetails", "Home")" class="btn btn-primary">Geri</a>
-</p>

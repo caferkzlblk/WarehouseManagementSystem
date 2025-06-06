@@ -1,22 +1,118 @@
 ﻿@model WarehouseManagementSystem.Models.Users
-
-<h2>Login</h2>
-@if (ViewBag.Message != null)
-{
-    <div class="alert alert-danger">
-        @ViewBag.Message
-    </div>
+@{
+    ViewData["Title"] = "Giriş Yap";
+    Layout = null;
 }
-<form asp-action="Login" method="post">
-    <div class="form-group">
-        <label asp-for="UserName"></label>
-        <input asp-for="UserName" class="form-control" />
-        <span asp-validation-for="UserName" class="text-danger"></span>
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <title>Warehouse MS | Giriş</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        body {
+            background: #f7f9fa;
+            min-height: 100vh;
+        }
+
+        .login-card {
+            max-width: 370px;
+            margin: 6rem auto 0 auto;
+            border-radius: 16px;
+            box-shadow: 0 6px 24px 0 rgba(40,60,100,.12);
+            border: none;
+        }
+
+        .login-logo {
+            font-size: 3rem;
+            color: #0d6efd;
+        }
+
+        .login-title {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .form-control {
+            border-radius: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card login-card p-4">
+            <div class="text-center mb-3">
+                <i class="bi bi-box-seam login-logo"></i>
+                <div class="login-title mt-2 mb-0">Warehouse MS</div>
+                <div class="text-muted mb-3">Oturum Aç</div>
+            </div>
+            @if (TempData["ResetSuccess"] != null)
+            {
+                <div class="alert alert-success py-2">@TempData["ResetSuccess"]</div>
+            }
+            @if (ViewData.ModelState.ErrorCount > 0)
+            {
+                <div class="alert alert-danger py-2">
+                    @foreach (var err in ViewData.ModelState.Values.SelectMany(x => x.Errors))
+                    {
+                        <div>@err.ErrorMessage</div>
+                    }
+                </div>
+            }
+            <form asp-action="Login" method="post" autocomplete="off">
+                <div class="mb-3">
+                    <label asp-for="UserName" class="form-label">Kullanıcı Adı</label>
+                    <input asp-for="UserName" class="form-control" placeholder="Kullanıcı adınızı girin" autocomplete="username" />
+                    <span asp-validation-for="UserName" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label">Şifre</label>
+                    <input asp-for="Password" class="form-control" type="password" placeholder="Şifreniz" autocomplete="current-password" />
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+                <div class="d-grid mt-3">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-box-arrow-in-right"></i> Giriş Yap
+                    </button>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal" class="small">Şifremi Unuttum</a>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="form-group">
-        <label asp-for="Password"></label>
-        <input asp-for="Password" type="password" class="form-control" />
-        <span asp-validation-for="Password" class="text-danger"></span>
+
+    <!-- Şifremi Unuttum Modalı -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-action="ResetPassword" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="forgotPasswordLabel">Şifre Yenileme</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="userID" class="form-label">Kullanıcı ID</label>
+                            <input type="number" name="userID" class="form-control" required min="1" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">Yeni Şifre</label>
+                            <input type="password" name="newPassword" class="form-control" required minlength="4" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                        <button type="submit" class="btn btn-success">Şifreyi Değiştir</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Login</button>
-</form>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

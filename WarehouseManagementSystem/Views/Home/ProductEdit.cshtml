@@ -1,59 +1,66 @@
 ﻿@model WarehouseManagementSystem.Models.Product
-
-@using WarehouseManagementSystem.Models
-
 @{
     ViewData["Title"] = "Ürün Düzenle";
 }
 
-<h1>Ürün Düzenle</h1>
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-body">
+                <h3 class="fw-bold mb-4">
+                    <i class="bi bi-pencil text-info"></i> Ürün Düzenle
+                </h3>
+                <form asp-action="ProductEdit" method="post">
+                    <input type="hidden" asp-for="ProductID" />
 
-<form asp-action="ProductEdit" method="post">
-    <div class="form-group">
-        <label asp-for="ProductName" class="control-label"></label>
-        <input asp-for="ProductName" class="form-control" />
-        <span asp-validation-for="ProductName" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Description" class="control-label"></label>
-        <input asp-for="Description" class="form-control" />
-        <span asp-validation-for="Description" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="QuantityInStock" class="control-label"></label>
-        <input asp-for="QuantityInStock" class="form-control" />
-        <span asp-validation-for="QuantityInStock" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Price" class="control-label"></label>
-        <input asp-for="Price" class="form-control" />
-        <span asp-validation-for="Price" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="CategoryID" class="control-label"></label>
-        <select asp-for="CategoryID" class="form-control">
-            
-            @foreach (var category in ViewBag.Categories as IEnumerable<Category>)
-            {
-                <option value="@category.CategoryID" selected="@(category.CategoryID == Model.CategoryID)">@category.CategoryName</option>
-            }
-        </select>
-        <span asp-validation-for="CategoryID" class="text-danger"></span>
+                    <div class="mb-3">
+                        <label asp-for="ProductName" class="form-label"></label>
+                        <input asp-for="ProductName" class="form-control" placeholder="Ürün Adı" />
+                        <span asp-validation-for="ProductName" class="text-danger"></span>
+                    </div>
 
-    </div>
-    <div class="form-group">
-        <label asp-for="SupplierID" class="control-label"></label>
-        <select asp-for="SupplierID" class="form-control">
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="2" placeholder="Açıklama"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
 
-            @foreach (var supplier in ViewBag.Suppliers as IEnumerable<Supplier>)
-            {
-                <option value="@supplier.SupplierID" selected="@(supplier.SupplierID == Model.SupplierID)">@supplier.SupplierName</option>
-            }
-        </select>
-        <span asp-validation-for="SupplierID" class="text-danger"></span>
+                    <div class="mb-3">
+                        <label asp-for="QuantityInStock" class="form-label"></label>
+                        <input asp-for="QuantityInStock" class="form-control" type="number" min="0" />
+                        <span asp-validation-for="QuantityInStock" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Price" class="form-label"></label>
+                        <input asp-for="Price" class="form-control" type="number" step="0.01" min="0" />
+                        <span asp-validation-for="Price" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="CategoryID" class="form-label"></label>
+                        <select asp-for="CategoryID" class="form-select" asp-items="ViewBag.Categories">
+                            <option value="">Kategori Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="CategoryID" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="SupplierID" class="form-label"></label>
+                        <select asp-for="SupplierID" class="form-select" asp-items="ViewBag.Suppliers">
+                            <option value="">Tedarikçi Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="SupplierID" class="text-danger"></span>
+                    </div>
+
+                    <div class="mt-4 d-flex justify-content-between">
+                        <a href="/Home/Products" class="btn btn-outline-secondary">Vazgeç</a>
+                        <button type="submit" class="btn btn-info text-white">
+                            Güncelle <i class="bi bi-check-circle"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-    <div class="form-group">
-        <input type="submit" value="Kaydet" class="btn btn-primary" />
-    </div>
-    @Html.AntiForgeryToken()
-</form>
+</div>

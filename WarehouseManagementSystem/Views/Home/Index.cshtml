@@ -1,263 +1,80 @@
-﻿@model IEnumerable<WarehouseManagementSystem.Models.Product>
-@inject IHttpContextAccessor Accessor
-
-@{
-    ViewData["Title"] = "Anasayfa";
-    Layout = "~/Views/Shared/_Layout.cshtml";
-    var lowStockProducts = ViewBag.LowStockProducts as List<WarehouseManagementSystem.Models.Product>;
+﻿@{
+    ViewData["Title"] = "Ana Sayfa";
+    var userName = ViewBag.UserName as string ?? "Kullanıcı";
 }
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<style>
-    body {
-        background-color: #f0f2f5;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    .card {
-        transition: transform 0.3s, box-shadow 0.3s;
-        border-radius: 15px;
-        overflow: hidden;
-    }
-
-        .card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-
-    .card-body {
-        padding: 20px;
-    }
-
-    .card-title {
-        font-size: 1.5rem;
-        font-weight: bold;
-    }
-
-    .container {
-        background-color: #ffffff;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .list-group-item {
-        background-color: #e9ecef;
-        border: none;
-        border-radius: 10px;
-        margin-bottom: 10px;
-    }
-
-        .list-group-item:nth-child(odd) {
-            background-color: #f1f3f5;
-        }
-
-    #productChart {
-        margin-top: 20px;
-    }
-
-    .toast-container {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        z-index: 1050;
-        max-width: 300px;
-    }
-
-    .toast {
-        margin-bottom: 10px;
-    }
-
-    .toast-header {
-        background-color: #007bff;
-        color: #fff;
-        border-bottom: 1px solid #0056b3;
-    }
-
-    .btn-primary {
-        background-color: #007bff;
-        border-color: #007bff;
-    }
-
-        .btn-primary:hover {
-            background-color: #0056b3;
-            border-color: #004085;
-        }
-
-    .btn-success {
-        background-color: #28a745;
-        border-color: #28a745;
-    }
-
-        .btn-success:hover {
-            background-color: #218838;
-            border-color: #1e7e34;
-        }
-
-    .btn-warning {
-        background-color: #ffc107;
-        border-color: #ffc107;
-    }
-
-        .btn-warning:hover {
-            background-color: #e0a800;
-            border-color: #d39e00;
-        }
-
-    .btn-info {
-        background-color: #17a2b8;
-        border-color: #17a2b8;
-    }
-
-        .btn-info:hover {
-            background-color: #138496;
-            border-color: #117a8b;
-        }
-
-    .btn-danger {
-        background-color: #dc3545;
-        border-color: #dc3545;
-    }
-
-        .btn-danger:hover {
-            background-color: #c82333;
-            border-color: #bd2130;
-        }
-
-    .btn-secondary {
-        background-color: #6c757d;
-        border-color: #6c757d;
-    }
-
-        .btn-secondary:hover {
-            background-color: #5a6268;
-            border-color: #545b62;
-        }
-
-    .chart-container {
-        position: relative;
-        margin-top: 20px;
-    }
-</style>
-
-<div class="container mt-5">
-    <h2 class="text-center mb-4">Yönetim Paneli</h2>
-    @{
-        var username = Accessor.HttpContext.Session.GetString("UserName");
-    }
-    <div class="text-center mb-4">
-        <span class="text-primary" style="font-size: 1.5rem; font-weight: bold;">@username</span>
-    </div>
-
-    <div class="row text-center">
-        <div class="col-md-4 mb-3">
-            <a href="@Url.Action("Categories", "Home")" class="card bg-primary text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Kategoriler</h5>
-                    <p class="card-text">Kategori yönetimi ve düzenlemeleri yapabilirsiniz.</p>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4 mb-3">
-            <a href="@Url.Action("Suppliers", "Home")" class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Tedarikçiler</h5>
-                    <p class="card-text">Tedarikçi ekleyebilir ve düzenleyebilirsiniz.</p>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4 mb-3">
-            <a href="@Url.Action("Users", "Home")" class="card bg-warning text-dark">
-                <div class="card-body">
-                    <h5 class="card-title">Kullanıcılar</h5>
-                    <p class="card-text">Kullanıcıları görüntüleyebilir ve yönetebilirsiniz.</p>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4 mb-3">
-            <a href="@Url.Action("Roles", "Home")" class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Roller</h5>
-                    <p class="card-text">Kullanıcı rollerini oluşturabilir ve yönetebilirsiniz.</p>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4 mb-3">
-            <a href="@Url.Action("Orders", "Home")" class="card bg-danger text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Siparişler</h5>
-                    <p class="card-text">Siparişleri görüntüleyebilir ve yönetebilirsiniz.</p>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-4 mb-3">
-            <a href="@Url.Action("Products", "Home")" class="card bg-secondary text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Ürünler</h5>
-                    <p class="card-text">Ürünleri görüntüleyebilir ve yönetebilirsiniz.</p>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <div class="container mt-5">
-        <h2 class="text-center mb-4">Product Summary</h2>
-
-        <div class="chart-container">
-            <canvas id="productChart" width="400" height="200"></canvas>
-        </div>
-        <div class="text-center mt-3">
-            <h3>Toplam Stok Miktarı: @ViewBag.TotalStock</h3>
-        </div>
-    </div>
-
-    <div class="toast-container">
-        <!-- Toast Messages -->
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8 text-center">
+        <h1 class="fw-bold mb-3 display-5">
+            <i class="bi bi-box-seam text-primary" style="font-size:48px;vertical-align:middle;"></i>
+            Hoşgeldiniz, @userName!
+        </h1>
+        <p class="lead text-muted">
+            <b>Warehouse Management System</b> ile tüm sipariş, stok, tedarikçi ve kullanıcı işlemlerini tek bir panelden yönetebilirsiniz.
+        </p>
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        fetch('/api/product/ProductStockData')
-            .then(response => response.json())
-            .then(data => {
-                const labels = data.map(item => item.productName);
-                const quantities = data.map(item => item.quantityInStock);
+<div class="row g-4 justify-content-center">
+    <div class="col-12 col-sm-6 col-md-4">
+        <a href="/Home/Orders" class="text-decoration-none">
+            <div class="card shadow-sm h-100 hover-shadow">
+                <div class="card-body text-center">
+                    <i class="bi bi-basket display-3 text-primary"></i>
+                    <h5 class="card-title mt-3">Siparişler</h5>
+                    <p class="card-text text-muted">Siparişleri incele, düzenle veya yeni sipariş oluştur.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-sm-6 col-md-4">
+        <a href="/Home/Products" class="text-decoration-none">
+            <div class="card shadow-sm h-100 hover-shadow">
+                <div class="card-body text-center">
+                    <i class="bi bi-box-seam display-3 text-success"></i>
+                    <h5 class="card-title mt-3">Ürünler</h5>
+                    <p class="card-text text-muted">Tüm ürünleri ve stok bilgilerini görüntüle.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-sm-6 col-md-4">
+        <a href="/Home/Suppliers" class="text-decoration-none">
+            <div class="card shadow-sm h-100 hover-shadow">
+                <div class="card-body text-center">
+                    <i class="bi bi-truck display-3 text-warning"></i>
+                    <h5 class="card-title mt-3">Tedarikçiler</h5>
+                    <p class="card-text text-muted">Tedarikçi bilgilerini kolayca yönet.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-sm-6 col-md-4">
+        <a href="/Home/Users" class="text-decoration-none">
+            <div class="card shadow-sm h-100 hover-shadow">
+                <div class="card-body text-center">
+                    <i class="bi bi-person display-3 text-info"></i>
+                    <h5 class="card-title mt-3">Kullanıcılar</h5>
+                    <p class="card-text text-muted">Kullanıcı hesaplarını ve yetkilerini yönet.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-sm-6 col-md-4">
+        <a href="/Home/Categories" class="text-decoration-none">
+            <div class="card shadow-sm h-100 hover-shadow">
+                <div class="card-body text-center">
+                    <i class="bi bi-tags display-3 text-secondary"></i>
+                    <h5 class="card-title mt-3">Kategoriler</h5>
+                    <p class="card-text text-muted">Ürün kategorilerini görüntüle veya düzenle.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
 
-                const ctx = document.getElementById('productChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Product Stock',
-                            data: quantities,
-                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            })
-            .catch(error => console.error('Error fetching data:', error));
-    });
-
-    document.addEventListener('DOMContentLoaded', function () {
-        var toastElList = [].slice.call(document.querySelectorAll('.toast'));
-        var toastList = toastElList.map(function (toastEl) {
-            return new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 });
-        });
-
-        toastList.forEach(toast => toast.show());
-    });
-</script>
+<div class="row mt-5">
+    <div class="col-12 text-center">
+        <small class="text-muted">Son giriş: <b>@DateTime.Now.ToString("dd MMMM yyyy")</b> &mdash; Geliştirici: <span class="text-primary">Cafer Kızılbulak</span></small>
+    </div>
+</div>

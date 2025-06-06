@@ -1,35 +1,37 @@
 ﻿@model WarehouseManagementSystem.Models.Users
-
 @{
-    ViewData["Title"] = "Yeni Kullanıcı Oluştur";
+    ViewData["Title"] = "Kullanıcı Düzenle";
 }
-
-<h1>Yeni Kullanıcı Oluştur</h1>
-
-<form asp-action="UserCreate" method="post">
-    <div class="form-group">
-        <label asp-for="UserName" class="control-label"></label>
-        <input asp-for="UserName" class="form-control" />
-        <span asp-validation-for="UserName" class="text-danger"></span>
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-body">
+                <h3 class="fw-bold mb-4">
+                    <i class="bi bi-pencil text-info"></i> Kullanıcı Düzenle
+                </h3>
+                <form asp-action="UserEdit" method="post">
+                    <input type="hidden" asp-for="UserID" />
+                    <div class="mb-3">
+                        <label asp-for="UserName" class="form-label"></label>
+                        <input asp-for="UserName" class="form-control" placeholder="Kullanıcı Adı" />
+                        <span asp-validation-for="UserName" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label"></label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="Şifre" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="RoleID" class="form-label"></label>
+                        <select asp-for="RoleID" class="form-select" asp-items="ViewBag.Roles"></select>
+                        <span asp-validation-for="RoleID" class="text-danger"></span>
+                    </div>
+                    <div class="mt-4 d-flex justify-content-between">
+                        <a href="/Home/Users" class="btn btn-outline-secondary">Vazgeç</a>
+                        <button type="submit" class="btn btn-info text-white">Güncelle <i class="bi bi-check-circle"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-    <div class="form-group">
-        <label asp-for="Password" class="control-label"></label>
-        <input asp-for="Password" type="password" class="form-control" />
-        <span asp-validation-for="Password" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <input type="hidden" asp-for="RoleID" />
-        <label asp-for="RoleID" class="control-label"></label>
-        <select asp-for="RoleID" class="form-control">
-            @foreach (var role in ViewBag.Roles as IEnumerable<WarehouseManagementSystem.Models.Role>)
-            {
-                <option value="@role.RoleID">@role.RoleName</option>
-            }
-        </select>
-        <span asp-validation-for="RoleID" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <input type="submit" value="Kaydet" class="btn btn-primary" />
-    </div>
-    @Html.AntiForgeryToken()
-</form>
+</div>

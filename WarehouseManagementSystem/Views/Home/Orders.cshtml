@@ -1,327 +1,141 @@
 ﻿@model WarehouseManagementSystem.Models.OrderFilterViewModel
-
 @{
     ViewData["Title"] = "Siparişler";
-    int? currentRoleID = ViewData["CurrentRoleID"] as int?;
 }
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-<style>
-    .container {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .btn-primary {
-        background-color: #007bff;
-        border-color: #007bff;
-        transition: background-color 0.3s, border-color 0.3s;
-    }
-
-        .btn-primary:hover {
-            background-color: #0056b3;
-            border-color: #004085;
-        }
-
-    .btn-success {
-        background-color: #28a745;
-        border-color: #28a745;
-        transition: background-color 0.3s, border-color 0.3s;
-    }
-
-        .btn-success:hover {
-            background-color: #218838;
-            border-color: #1e7e34;
-        }
-
-    .btn-secondary {
-        background-color: #6c757d;
-        border-color: #6c757d;
-        transition: background-color 0.3s, border-color 0.3s;
-    }
-
-        .btn-secondary:hover {
-            background-color: #5a6268;
-            border-color: #4e555b;
-        }
-
-    .btn-danger {
-        background-color: #dc3545;
-        border-color: #dc3545;
-        transition: background-color 0.3s, border-color 0.3s;
-    }
-
-        .btn-danger:hover {
-            background-color: #c82333;
-            border-color: #bd2130;
-        }
-
-    .table th, .table td {
-        vertical-align: middle;
-    }
-
-    .table thead th {
-        background-color: #343a40;
-        color: #fff;
-    }
-
-    .table tbody tr:hover {
-        background-color: #f1f1f1;
-    }
-
-    .form-group label {
-        font-weight: bold;
-    }
-
-    .form-actions a {
-        background-color: #007bff;
-        color: #fff;
-        transition: background-color 0.3s;
-    }
-
-        .form-actions a:hover {
-            background-color: #0056b3;
-        }
-
-    .chart-container {
-        position: relative;
-        width: 100%;
-        height: 400px;
-    }
-
-    .alert {
-        border-radius: 5px;
-    }
-</style>
-
-<div class="container mt-5">
-    <h1 class="mb-4">@ViewData["Title"]</h1>
-
-    <h2 class="mb-4">Sipariş Durumunu Güncelle</h2>
-    @using (Html.BeginForm("UpdateOrderStatus", "Home", FormMethod.Post))
-    {
-        @Html.AntiForgeryToken()
-
-        <div class="form-group">
-            @Html.LabelFor(model => model.OrderNumberValue, "Sipariş Numarası")
-            @Html.TextBoxFor(model => model.OrderNumberValue, new { @class = "form-control" })
-            <button type="submit" class="btn btn-primary mt-2">Durumu Güncelle</button>
-        </div>
-    }
-
-    <!-- Sonuç Mesajları -->
-    @if (TempData["Success"] != null)
-    {
-        <div class="alert alert-success mt-2">
-            @TempData["Success"]
-        </div>
-    }
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger mt-2">
-            @TempData["Error"]
-        </div>
-    }
-
-    <!-- Filtreleme Formu -->
-    <form asp-action="Orders" method="get" class="mb-4">
-        <div class="mb-3">
-            @if (currentRoleID == 1) // Yönetici için sadece sipariş oluşturma butonu görünsün
-            {
-                <a href="@Url.Action("OrderCreate", "Home")" class="btn btn-success">
-                    <i class="fas fa-plus-circle"></i> Yeni Sipariş Oluştur
-                </a>
-            }
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-filter"></i> Filtrele
+@if (TempData["OrderStatusMessage"] != null)
+{
+    <div class="alert alert-info my-3">@TempData["OrderStatusMessage"]</div>
+}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">
+        <i class="bi bi-basket text-primary"></i> Siparişler
+    </h2>
+    <div>
+        <form action="/Home/ExportOrdersToExcel" method="get" class="d-inline">
+            <input type="hidden" name="statusID" value="@Model.StatusID" />
+            <input type="hidden" name="startDate" value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
+            <input type="hidden" name="endDate" value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
+            <button type="submit" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-excel"></i> Excele Aktar
             </button>
-            <a href="@Url.Action("ExportOrdersToExcel", "Home", new { statusID = Model.StatusID, startDate = Model.StartDate, endDate = Model.EndDate })" class="btn btn-secondary">
-                <i class="fas fa-file-excel"></i> Excel'e Aktar
-            </a>
-        </div>
+        </form>
 
-        <div class="form-group mb-3">
-            <label for="statusID">Durum ID</label>
-            <select id="statusID" name="statusID" class="form-control">
-                <option value="">Seçiniz</option>
-                @foreach (var status in Model.Status)
-                {
-                    <option value="@status.StatusID" selected="@(status.StatusID == Model.StatusID)">@status.StatusName</option>
-                }
-            </select>
-        </div>
 
-        <div class="form-group mb-3">
-            <label for="startDate">Başlangıç Tarihi</label>
-            <input type="date" id="startDate" name="startDate" class="form-control" value="@Model.StartDate?.ToString("yyyy-MM-dd")" />
-        </div>
 
-        <div class="form-group mb-3">
-            <label for="endDate">Bitiş Tarihi</label>
-            <input type="date" id="endDate" name="endDate" class="form-control" value="@Model.EndDate?.ToString("yyyy-MM-dd")" />
+
+
+
+        <a href="/Home/OrderCreate" class="btn btn-success ms-2 rounded-pill shadow-sm">
+            <i class="bi bi-plus-circle me-1"></i> Yeni Sipariş Oluştur
+        </a>
+    </div>
+</div>
+<div class="card mb-3 p-3 shadow-sm">
+    <h5 class="mb-3">Sipariş Numarası ile Durum Güncelle</h5>
+    <form asp-action="UpdateOrderStatus" asp-controller="Home" method="post" class="row g-2 align-items-end">
+        <div class="col-12 col-md-8">
+            <label for="OrderNumberValue" class="form-label">Sipariş Numarası</label>
+            <input type="text" name="orderNumberValue" id="OrderNumberValue" class="form-control" placeholder="Sipariş No girin..." required />
+            <input type="hidden" name="orderID" value="" /> <!-- Controller otomatik bulacak, gerekirse doldur -->
+        </div>
+        <div class="col-12 col-md-4">
+            <button type="submit" class="btn btn-primary w-100 mt-4">Durumu Güncelle</button>
         </div>
     </form>
+    <small class="text-muted">Sipariş numarasını girip güncelle butonuna basınca sistem siparişi sıradaki duruma geçirir.</small>
+</div>
 
-    <!-- Sipariş Tablosu -->
-    <div class="table-responsive mt-4">
-        <table class="table table-hover table-bordered">
-            <thead class="thead-dark">
+
+<!-- FİLTRE PANELİ -->
+<div class="card mb-4 shadow-sm border-0">
+    <div class="card-body">
+        <form asp-action="Orders" asp-controller="Home" method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Durum</label>
+                <select name="statusID" class="form-select">
+                    <option value="">Tümü</option>
+                    @foreach (var status in Model.Status ?? Enumerable.Empty<WarehouseManagementSystem.Models.Statuses>())
+                    {
+                        if (Model.StatusID == status.StatusID)
+                        {
+                            <option value="@status.StatusID" selected>@status.StatusName</option>
+                        }
+                        else
+                        {
+                            <option value="@status.StatusID">@status.StatusName</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Başlangıç Tarihi</label>
+                <input name="startDate" type="date" class="form-control" value="@(Model.StartDate?.ToString("yyyy-MM-dd") ?? "")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Bitiş Tarihi</label>
+                <input name="endDate" type="date" class="form-control" value="@(Model.EndDate?.ToString("yyyy-MM-dd") ?? "")" />
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">Filtrele</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- SİPARİŞ LİSTESİ -->
+@if (Model.Orders == null || !Model.Orders.Any())
+{
+    <div class="alert alert-warning text-center">
+        <i class="bi bi-exclamation-circle"></i> Henüz sipariş yok!
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle bg-white shadow-sm rounded">
+            <thead class="table-light">
                 <tr>
-                    <th>Sipariş Tarihi</th>
+                    <th>#</th>
+                    <th>Sipariş No</th>
+                    <th>Tarih</th>
+                    <th>Müşteri</th>
                     <th>Durum</th>
-                    <th>Ürünler</th>
-                    <th>Miktarlar</th>
-                    <th>Müşteri ID</th>
-                    <th>Sipariş Numarası</th>
-                    <th>Gönderi Şirketi</th>
-                    <th>Gönderi Ücreti</th>
+                    <th>Kargo</th>
+                    <th>Tutar</th>
                     <th>İşlemler</th>
                 </tr>
             </thead>
             <tbody>
-                @if (Model.Orders != null && Model.Orders.Any())
-                {
-                    @foreach (var order in Model.Orders)
-                    {
-                        <tr>
-                            <td>@order.OrderDate.ToShortDateString()</td>
-                            <td>@order.Status?.StatusName</td>
-                            <td>
-                                @foreach (var detail in order.OrderDetails)
-                                {
-                                    <div>@detail.Product.ProductName</div>
-                                }
-                            </td>
-                            <td>
-                                @foreach (var detail in order.OrderDetails)
-                                {
-                                    <div>@detail.Quantity</div>
-                                }
-                            </td>
-                            <td>@order.CustomerID</td>
-                            <td>@order.OrderNumberValue</td>
-
-                            @if (order.StatusID == 3 || order.StatusID == 4)
-                            {
-                                <td>@order.ShippingCompany?.CompanyName</td>
-                                <td>
-                                    @{
-                                        var shippingRates = Model.ShippingRates
-                                        .Where(sr => sr.ShippingCompanyID == order.ShippingCompanyID)
-                                        .ToList();
-                                        var totalShippingCost = 0m;
-
-                                        foreach (var detail in order.OrderDetails)
-                                        {
-                                            var rate = shippingRates
-                                            .FirstOrDefault(sr => detail.Quantity >= sr.MinProductCount && detail.Quantity <= sr.MaxProductCount)?.Rate
-                                            ?? 0;
-
-                                            totalShippingCost += (decimal)rate;
-                                        }
-
-                                        @totalShippingCost
-                                    }
-                                </td>
-                            }
-                            else
-                            {
-                                <td>-</td>
-                                <td>-</td>
-                            }
-
-                            <td class="text-center">
-                                @if (currentRoleID == 2)
-                                {
-                                    <form action="@Url.Action("ProcessOrder", "Home", new { id = order.OrderID })" method="post" style="display:inline;">
-                                        <button type="submit" class="btn btn-primary btn-sm">Bir Sonraki Aşamaya Geç</button>
-                                    </form>
-                                }
-                                @if (currentRoleID == 1)
-                                {
-                                    <a href="@Url.Action("OrderEdit", "Home", new { id = order.OrderID })" class="btn btn-warning btn-sm">
-                                        <i class="fas fa-pencil-alt"></i> Düzenle
-                                    </a>
-                                    <form action="@Url.Action("OrderDelete", "Home", new { id = order.OrderID })" method="post" style="display:inline;">
-                                        <input type="submit" value="Sil" class="btn btn-danger btn-sm" />
-                                        @Html.AntiForgeryToken()
-                                    </form>
-                                }
-                            </td>
-                        </tr>
-                    }
-                }
-                else
+                @foreach (var item in Model.Orders)
                 {
                     <tr>
-                        <td colspan="9" class="text-center">Filtreye uyan sipariş bulunamadı.</td>
+                        <td><i class="bi bi-basket text-primary"></i></td>
+                        <td>@item.OrderNumberValue</td>
+                        <td>@item.OrderDate.ToString("dd.MM.yyyy")</td>
+                        <td>@item.CustomerID</td>
+                        <td>
+                            <span class="badge bg-@(item.StatusID == 1 ? "secondary" : item.StatusID == 2 ? "primary" : item.StatusID == 3 ? "success" : "dark")">
+                                @item.Status?.StatusName
+                            </span>
+                        </td>
+                        <td>@item.ShippingCompanyID</td>
+                        <td>@string.Format("{0:N2} ₺", item.TotalCost)</td>
+                        <td>
+                            <a href="/Home/OrderDetailsDetails/@item.OrderID" class="btn btn-outline-info btn-sm me-1">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="/Home/OrderEdit/@item.OrderID" class="btn btn-outline-warning btn-sm me-1">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form asp-action="OrderDelete" asp-controller="Home" asp-route-id="@item.OrderID" method="post" style="display:inline;">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Silmek istediğine emin misin?');">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
-
-    <div class="form-actions mt-4">
-        <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
-            <i class="fas fa-home"></i> Ana Sayfa
-        </a>
-    </div>
-</div>
-
-<div class="container mt-5">
-    <h2 class="mb-4">Sipariş Ürün Özeti</h2>
-
-    <!-- Grafik -->
-    <div class="chart-container">
-        <canvas id="orderProductChart"></canvas>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        fetch('/Home/GetOrderProductSummaryData')
-            .then(response => response.json())
-            .then(data => {
-                const labels = data.map(item => item.productName);
-                const quantities = data.map(item => item.quantity);
-                const orderDates = data.map(item => new Date(item.orderDate).toLocaleDateString());
-
-                const ctx = document.getElementById('orderProductChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Quantity',
-                            data: quantities,
-                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        },
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    afterLabel: function (tooltipItem) {
-                                        return `Order Date: ${orderDates[tooltipItem.dataIndex]}`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            })
-            .catch(error => console.error('Error fetching data:', error));
-    });
-</script>
+}

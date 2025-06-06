@@ -2,6 +2,7 @@ using ClosedXML.Excel;
 using DocumentFormat.OpenXml.Drawing.Charts;
 using DocumentFormat.OpenXml.EMMA;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using OfficeOpenXml;
@@ -10,8 +11,7 @@ using WarehouseManagementSystem.Models;
 
 namespace WarehouseManagementSystem.Controllers
 {
-    
- 
+
     public class HomeController : Controller
     {
         private readonly INotificationService _notificationService;
@@ -22,8 +22,68 @@ namespace WarehouseManagementSystem.Controllers
             this.context = context;
             _notificationService = notificationService;
         }
+        [HttpGet]
+        public IActionResult Analytics1()
+        {
+            return View();
+        }
 
-        [HttpGet("Orders/Export")]
+        // EN ÇOK SATILAN ÜRÜNLER
+        [HttpGet]
+        public IActionResult GetTopProductsData()
+        {
+            var data = context.OrderDetails
+                .GroupBy(x => x.Product.ProductName)
+                .Select(g => new {
+                    ProductName = g.Key,
+                    TotalSold = g.Sum(x => x.Quantity)
+                })
+                .OrderByDescending(x => x.TotalSold)
+                .Take(10)
+                .ToList();
+
+            return Json(data);
+        }
+
+        // STOK DAÐILIMI
+        [HttpGet]
+        public IActionResult GetStockDistributionData()
+        {
+            var data = context.Products
+                .Select(p => new {
+                    ProductName = p.ProductName,
+                    QuantityInStock = p.QuantityInStock
+                })
+                .ToList();
+
+            return Json(data);
+        }
+
+        [HttpGet]
+        public IActionResult GetMonthlySalesData()
+        {
+            var data = context.Orders
+                .GroupBy(o => new { o.OrderDate.Year, o.OrderDate.Month })
+                .Select(g => new {
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    TotalAmount = g.Sum(x => x.TotalCost)
+                })
+                .OrderBy(x => x.Year)
+                .ThenBy(x => x.Month)
+                .AsEnumerable() // BUNDAN SONRA C#'ta iþlenecek!
+                .Select(x => new {
+                    Month = $"{x.Year}-{x.Month.ToString("D2")}", // Artýk burada string formatlama serbest
+                    TotalAmount = x.TotalAmount
+                })
+                .ToList();
+
+            return Json(data);
+        }
+
+
+
+        [HttpGet]
         public async Task<IActionResult> ExportOrdersToExcel(int? statusID, DateTime? startDate, DateTime? endDate)
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -31,17 +91,11 @@ namespace WarehouseManagementSystem.Controllers
             var filteredOrders = context.Orders.AsQueryable();
 
             if (statusID.HasValue)
-            {
                 filteredOrders = filteredOrders.Where(o => o.StatusID == statusID.Value);
-            }
             if (startDate.HasValue)
-            {
                 filteredOrders = filteredOrders.Where(o => o.OrderDate >= startDate.Value);
-            }
             if (endDate.HasValue)
-            {
                 filteredOrders = filteredOrders.Where(o => o.OrderDate <= endDate.Value);
-            }
 
             var ordersToExport = await filteredOrders
                 .Include(o => o.Status)
@@ -49,18 +103,14 @@ namespace WarehouseManagementSystem.Controllers
                 .ThenInclude(od => od.Product)
                 .ToListAsync();
 
-            using (var package = new ExcelPackage())
+            using (var package = new OfficeOpenXml.ExcelPackage())
             {
                 var worksheet = package.Workbook.Worksheets.Add("Orders");
-
-               
                 worksheet.Cells[1, 1].Value = "Sipariþ Tarihi";
                 worksheet.Cells[1, 2].Value = "Müþteri ID";
                 worksheet.Cells[1, 3].Value = "Durum";
                 worksheet.Cells[1, 4].Value = "Ürün Adý";
                 worksheet.Cells[1, 5].Value = "Miktar";
-
-              
                 int row = 2;
                 foreach (var order in ordersToExport)
                 {
@@ -68,7 +118,7 @@ namespace WarehouseManagementSystem.Controllers
                     {
                         worksheet.Cells[row, 1].Value = order.OrderDate.ToString("yyyy-MM-dd");
                         worksheet.Cells[row, 2].Value = order.CustomerID;
-                        worksheet.Cells[row, 3].Value = order.Status.StatusName;
+                        worksheet.Cells[row, 3].Value = order.Status?.StatusName;
                         worksheet.Cells[row, 4].Value = detail.Product.ProductName;
                         worksheet.Cells[row, 5].Value = detail.Quantity;
                         row++;
@@ -79,14 +129,16 @@ namespace WarehouseManagementSystem.Controllers
 
                 var excelData = package.GetAsByteArray();
                 var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                var fileName = $"FilteredOrders_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.xlsx";
+                var fileName = $"FilteredOrders_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
 
                 return File(excelData, contentType, fileName);
             }
         }
 
 
-        
+
+
+
         public IActionResult Index()
         {
           
@@ -124,7 +176,7 @@ namespace WarehouseManagementSystem.Controllers
 
 
 
-        [HttpGet("Categories")]
+        [HttpGet]
      public async Task<IActionResult> Categories()
         {
             var categories = await context.Categories.ToListAsync();
@@ -555,9 +607,9 @@ namespace WarehouseManagementSystem.Controllers
             }
         
         }
-       
-       
-        [HttpGet("Orders")]
+
+
+        [HttpGet]
         public async Task<IActionResult> Orders(int? customerID, int? statusID, DateTime? startDate, DateTime? endDate)
         {
             var orders = await context.Orders
@@ -642,11 +694,15 @@ namespace WarehouseManagementSystem.Controllers
         [HttpGet]
         public IActionResult OrderCreate()
         {
-            ViewBag.ShippingCompanies = context.ShippingCompanies.ToList();
+            // Kargo firmalarýný dropdown için hazýrla
+            ViewBag.ShippingCompanies = new SelectList(context.ShippingCompanies.ToList(), "ShippingCompanyID", "CompanyName");
 
             var viewModel = new OrderCreateViewModel
             {
-                Order = new Models.Order(),
+                Order = new Models.Order()
+                {
+                    OrderDate = DateTime.Today
+                },
                 AvailableProducts = context.Products.ToList(),
                 ShippingCompanies = context.ShippingCompanies.ToList()
             };
@@ -654,106 +710,111 @@ namespace WarehouseManagementSystem.Controllers
             return View(viewModel);
         }
 
-        [HttpPost("OrderCreate")]
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> OrderCreate(OrderCreateViewModel viewModel, string selectedQuantities, string selectedProductIDs)
+        public async Task<IActionResult> OrderCreate(OrderCreateViewModel viewModel, List<int> selectedProductIDs)
         {
-            ViewBag.ShippingCompanies = context.ShippingCompanies.ToList();
+            ViewBag.ShippingCompanies = new SelectList(context.ShippingCompanies.ToList(), "ShippingCompanyID", "CompanyName");
 
             var roleID = HttpContext.Session.GetInt32("RoleID");
+            if (roleID != 1)
+                return roleID == 2 ? Forbid() : NotFound();
 
-            if (roleID == 1)
+            if (selectedProductIDs == null || !selectedProductIDs.Any())
             {
-                if (string.IsNullOrEmpty(selectedProductIDs) || string.IsNullOrEmpty(selectedQuantities))
+                ModelState.AddModelError("", "En az bir ürün seçmelisiniz.");
+                viewModel.AvailableProducts = context.Products.ToList();
+                return View(viewModel);
+            }
+
+            // Miktarlarý oku ve doðrula
+            var quantities = new List<int>();
+            foreach (var id in selectedProductIDs)
+            {
+                var formKey = $"quantity_{id}";
+                var value = Request.Form[formKey];
+                if (int.TryParse(value, out var qty) && qty > 0)
                 {
-                    ModelState.AddModelError("", "Ürünler ve miktarlarý eksik veya hatalý.");
+                    quantities.Add(qty);
+                }
+                else
+                {
+                    ModelState.AddModelError("", $"Ürün miktarý hatalý (ID: {id})");
+                    viewModel.AvailableProducts = context.Products.ToList();
+                    return View(viewModel);
+                }
+            }
+
+            if (quantities.Count != selectedProductIDs.Count)
+            {
+                ModelState.AddModelError("", "Her seçilen ürün için miktar girilmelidir.");
+                viewModel.AvailableProducts = context.Products.ToList();
+                return View(viewModel);
+            }
+
+            // Sipariþ nesnesi oluþtur
+            viewModel.Order.StatusID = 1;
+            context.Orders.Add(viewModel.Order);
+            await context.SaveChangesAsync();
+
+            var orderNumber = new OrderNumber
+            {
+                OrderID = viewModel.Order.OrderID,
+                GeneratedOrderNumber = GenerateOrderNumber(),
+                CreatedAt = DateTime.Now,
+                OrderNumberValue = GenerateOrderNumber()
+            };
+
+            context.OrderNumbers.Add(orderNumber);
+            await context.SaveChangesAsync();
+
+            viewModel.Order.OrderNumberID = orderNumber.OrderNumberID;
+            viewModel.Order.OrderNumberValue = orderNumber.OrderNumberValue;
+            context.Orders.Update(viewModel.Order);
+            await context.SaveChangesAsync();
+
+            // Toplam tutar hesapla
+            decimal totalProductCost = 0;
+            for (int i = 0; i < selectedProductIDs.Count; i++)
+            {
+                var productID = selectedProductIDs[i];
+                var quantity = quantities[i];
+                var product = await context.Products.FindAsync(productID);
+
+                if (product == null || product.QuantityInStock < quantity)
+                {
+                    ModelState.AddModelError("", $"Stok yetersiz: {product?.ProductName}");
                     viewModel.AvailableProducts = context.Products.ToList();
                     return View(viewModel);
                 }
 
-                var productIDs = selectedProductIDs.Split(',').Select(int.Parse).ToList();
-                var quantities = selectedQuantities.Split(',').Select(int.Parse).ToList();
-
-                if (productIDs.Count == 0 || quantities.Count == 0 || productIDs.Count != quantities.Count)
-                {
-                    ModelState.AddModelError("", "Ürünler ve miktarlarý eksik veya hatalý.");
-                    viewModel.AvailableProducts = context.Products.ToList();
-                    return View(viewModel);
-                }
-
-                // Sipariþi ekle ve kaydet
-                viewModel.Order.StatusID = 1; // Baþlangýçta durum 1 olarak ayarlanýr
-                context.Orders.Add(viewModel.Order);
-                await context.SaveChangesAsync();
-
-                // Sipariþ numarasýný oluþtur
-                var orderNumber = new OrderNumber
+                var orderDetails = new OrderDetails
                 {
                     OrderID = viewModel.Order.OrderID,
-                    GeneratedOrderNumber = GenerateOrderNumber(),
-                    CreatedAt = DateTime.Now,
-                    OrderNumberValue = GenerateOrderNumber()
+                    ProductID = productID,
+                    StatusID = 1,
+                    Quantity = quantity,
+                    Price = product.Price
                 };
 
-                // Sipariþ numarasýný ekle ve güncelle
-                context.OrderNumbers.Add(orderNumber);
-                await context.SaveChangesAsync();
-
-                viewModel.Order.OrderNumberID = orderNumber.OrderNumberID;
-                viewModel.Order.OrderNumberValue = orderNumber.OrderNumberValue;
-                context.Orders.Update(viewModel.Order);
-                await context.SaveChangesAsync(); // Güncellemeyi kaydedin
-
-                // Sipariþ detaylarýný ekle
-                foreach (var productID in productIDs)
-                {
-                    var quantity = quantities[productIDs.IndexOf(productID)];
-                    var product = await context.Products.FindAsync(productID);
-
-                    if (product != null && product.QuantityInStock >= quantity)
-                    {
-                        var orderDetails = new OrderDetails
-                        {
-                            OrderID = viewModel.Order.OrderID,
-                            ProductID = productID,
-                            StatusID = 1,  // Sipariþ oluþturulurken baþlangýç durumu
-                            Quantity = quantity,
-                            Price = product.Price
-                        };
-
-                        product.QuantityInStock -= quantity;
-                        context.OrderDetails.Add(orderDetails);
-                    }
-                    else
-                    {
-                        ModelState.AddModelError("", $"Ürün stoðu yetersiz: {product?.ProductName}");
-                        viewModel.AvailableProducts = context.Products.ToList();
-                        return View(viewModel);
-                    }
-                }
-
-                // ShippingCost Hesaplama
-                var shippingRate = await context.ShippingRates.FirstOrDefaultAsync(sr => sr.ShippingCompanyID == viewModel.Order.ShippingCompanyID);
-                if (shippingRate != null)
-                {
-                    int productCount = productIDs.Count;
-                    decimal shippingCost = (decimal)shippingRate.Rate * productCount;
-                    viewModel.Order.TotalCost = shippingCost;
-                    context.Orders.Update(viewModel.Order); // Update iþlemi kullanýn
-                    await context.SaveChangesAsync();
-                }
-
-                return RedirectToAction(nameof(Orders));
+                product.QuantityInStock -= quantity;
+                totalProductCost += product.Price * quantity;
+                context.OrderDetails.Add(orderDetails);
             }
-            else if (roleID == 2)
-            {
-                return Forbid();
-            }
-            else
-            {
-                return NotFound();
-            }
+
+            // Kargo ücreti ekle
+            var shippingRate = await context.ShippingRates.FirstOrDefaultAsync(sr => sr.ShippingCompanyID == viewModel.Order.ShippingCompanyID);
+            decimal shippingCost = 0;
+            if (shippingRate != null)
+                shippingCost = (decimal)shippingRate.Rate * selectedProductIDs.Count;
+
+            viewModel.Order.TotalCost = totalProductCost + shippingCost;
+            context.Orders.Update(viewModel.Order);
+            await context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Orders));
         }
+
 
 
 
@@ -875,6 +936,7 @@ namespace WarehouseManagementSystem.Controllers
             }
             var orderDetails = await context.OrderDetails
                 .Include(od => od.Order)
+                .ThenInclude(o => o.Status)
                 .Include(od => od.Product)
                 .FirstOrDefaultAsync(m => m.OrderDetailsID == id);
 
@@ -945,8 +1007,8 @@ namespace WarehouseManagementSystem.Controllers
                 return NotFound();
             }
 
-            ViewBag.Categories = await context.Categories.ToListAsync();
-            ViewBag.Suppliers = await context.Suppliers.ToListAsync();
+            ViewBag.Categories = new SelectList(context.Categories.ToList(), "CategoryID", "CategoryName");
+            ViewBag.Suppliers = new SelectList(await context.Suppliers.ToListAsync(), "SupplierID", "SupplierName", product.SupplierID);
             return View(product);
         }
         [HttpPost]
@@ -1051,73 +1113,59 @@ namespace WarehouseManagementSystem.Controllers
             string message = $"{product.ProductName} ürünü için stok seviyesi düþük. Mevcut Stok: {product.QuantityInStock}";
             _notificationService.SendNotification("Düþük Stok Uyarýsý", message);
         }
-       
-        public string GenerateOrderNumber()
+
+        private string GenerateOrderNumber()
         {
-            var timestamp = DateTime.Now.ToString("yyMMddHHmmss");
-            var random = new Random().Next(1000, 9999);
-            return $"{timestamp}{random}";
+            return $"ORD-{DateTime.Now:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 4).ToUpper()}";
         }
+
         [HttpPost]
-        public async Task<IActionResult> UpdateOrderStatus(string orderNumberValue, int orderID, int newStatusID)
+        public async Task<IActionResult> UpdateOrderStatus(string orderNumberValue)
         {
-            var orderid = context.Orders.FirstOrDefault(o => o.OrderNumber.OrderNumberValue == orderNumberValue).OrderID;
-            orderID = orderid;
+            // orderNumberValue'ya sahip sipariþi bul
             var order = context.Orders
                 .Include(o => o.Shipment)
                 .Include(o => o.OrderNumber)
-                .FirstOrDefault(o => o.OrderNumber.OrderNumberValue == orderNumberValue && o.OrderID == orderID);
+                .FirstOrDefault(o => o.OrderNumber.OrderNumberValue == orderNumberValue);
 
             if (order == null)
             {
-                return NotFound();
+                TempData["OrderStatusMessage"] = "Girilen sipariþ numarasý bulunamadý!";
+                return RedirectToAction("Orders");
             }
 
-            // Determine the new status
+            // Sýradaki statüye geçir
             if (order.StatusID == 1)
-            {
                 order.StatusID = 2;
-            }
-            else if ( order.StatusID == 2)
-            {
+            else if (order.StatusID == 2)
                 order.StatusID = 3;
-
-                // Create a new shipment if the status is being updated to 3
-               
-            }
             else if (order.StatusID == 3)
-            {
                 order.StatusID = 4;
-            }
-           
             else
             {
-                // Invalid status transition
-                ModelState.AddModelError("", "Geçersiz durum geçiþi.");
-                return View(); // Redirect to an error page or view
+                TempData["OrderStatusMessage"] = "Geçersiz veya tamamlanmýþ sipariþ durumu!";
+                return RedirectToAction("Orders");
             }
+
+            // Statü 3'e geçtiyse yeni kargo kaydý oluþtur
             if (order.StatusID == 3)
             {
-                newStatusID = order.StatusID;
                 var shipment = new Shipment
                 {
                     OrderID = order.OrderID,
                     ShipmentNumber = GenerateShipmentNumber(),
                     ShipmentDate = DateTime.UtcNow,
                     ShippingCompanyID = order.ShippingCompanyID,
-                    StatusID = newStatusID
+                    StatusID = order.StatusID
                 };
                 context.Shipments.Add(shipment);
             }
-       
-           
-            
 
-            // Save changes to the database
             await context.SaveChangesAsync();
-
+            TempData["OrderStatusMessage"] = "Sipariþ durumu baþarýyla güncellendi!";
             return RedirectToAction("Orders");
         }
+
 
         public IActionResult GetShippingCost(int shippingCompanyID, int productCount)
         {

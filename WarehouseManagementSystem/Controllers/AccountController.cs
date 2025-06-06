@@ -43,6 +43,21 @@ namespace WarehouseManagementSystem.Controllers
            
             return View();
         }
+        [HttpPost]
+        public IActionResult ResetPassword(int userID, string newPassword)
+        {
+            var user = context.Users.FirstOrDefault(u => u.UserID == userID);
+            if (user == null)
+            {
+                TempData["ResetSuccess"] = "Girilen ID'ye ait kullanıcı bulunamadı!";
+                return RedirectToAction("Login");
+            }
+            user.Password = newPassword;
+            context.Users.Update(user);
+            context.SaveChanges();
+            TempData["ResetSuccess"] = "Şifre başarıyla değiştirildi. Lütfen yeni şifrenizle giriş yapınız.";
+            return RedirectToAction("Login");
+        }
 
 
         //[HttpGet("GetUserDetails")]

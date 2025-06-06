@@ -1,34 +1,50 @@
-﻿@model IEnumerable<WarehouseManagementSystem.Models.OrderDetails>
-
+﻿@model WarehouseManagementSystem.Models.Order
 @{
-    ViewData["Title"] = "Sipariş Detayları";
+    ViewData["Title"] = "Sipariş Detayı";
 }
-
-<h1>Sipariş Detayları</h1>
-
-<table class="table">
-    <thead>
-        <tr>
-            <th>Sipariş ID</th>
-            <th>Ürün ID</th>
-            <th>Miktar</th>
-            <th>Fiyat</th>
-            <th>Toplam Tutar</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var detail in Model)
-        {
-            <tr>
-                <td>@detail.OrderID</td>
-                <td>@detail.ProductID</td>
-                <td>@detail.Quantity</td>
-                <td>@detail.Price</td>
-                <td>@(detail.Quantity * detail.Price)</td>
-                <td>
-                    <a href="@Url.Action("OrderDetailsDetails", "Home", new { id = detail.OrderDetailsID })" class="btn btn-info">Detaylar</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-body">
+                <h3 class="fw-bold mb-4">
+                    <i class="bi bi-eye text-info"></i> Sipariş Detayı
+                </h3>
+                <dl class="row">
+                    <dt class="col-sm-4">Sipariş No:</dt>
+                    <dd class="col-sm-8">@Model.OrderNumberValue</dd>
+                    <dt class="col-sm-4">Müşteri:</dt>
+                    <dd class="col-sm-8">@Model.CustomerID</dd>
+                    <dt class="col-sm-4">Tarih:</dt>
+                    <dd class="col-sm-8">@Model.OrderDate.ToString("dd.MM.yyyy")</dd>
+                    <dt class="col-sm-4">Durum:</dt>
+                    <dd class="col-sm-8">@Model.StatusID</dd>
+                    <dt class="col-sm-4">Toplam Tutar:</dt>
+                    <dd class="col-sm-8">@string.Format("{0:N2} ₺", Model.TotalCost)</dd>
+                </dl>
+                <h5 class="mt-4">Sipariş Ürünleri</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>Ürün</th>
+                                <th>Miktar</th>
+                                <th>Fiyat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var detail in Model.OrderDetails)
+                            {
+                                <tr>
+                                    <td>@detail.ProductID</td>
+                                    <td>@detail.Quantity</td>
+                                    <td>@detail.Price ₺</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <a href="/Home/Orders" class="btn btn-outline-secondary mt-3">Geri Dön</a>
+            </div>
+        </div>
+    </div>
+</div>

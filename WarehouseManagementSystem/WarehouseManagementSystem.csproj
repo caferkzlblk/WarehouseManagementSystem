@@ -7,8 +7,24 @@
 		<UserSecretsId>aspnet-WarehouseManagementSystem-f3c478b4-d6c1-474f-a65d-3e3c9f234805</UserSecretsId>
 	</PropertyGroup>
 
+	<ItemGroup>
+	  <Compile Remove="NewFolder\**" />
+	  <Content Remove="NewFolder\**" />
+	  <EmbeddedResource Remove="NewFolder\**" />
+	  <None Remove="NewFolder\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Views\Home\Analytics.cshtml.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Remove="Views\Home\Analytics.cshtml" />
+	</ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.102.3" />
+    <PackageReference Include="DinkToPdf" Version="1.0.8" />
     <PackageReference Include="EntityFramework" Version="6.5.1" />
     <PackageReference Include="EPPlus" Version="7.2.2" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.7" />

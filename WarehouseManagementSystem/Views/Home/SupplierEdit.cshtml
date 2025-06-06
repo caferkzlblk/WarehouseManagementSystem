@@ -1,20 +1,32 @@
 ﻿@model WarehouseManagementSystem.Models.Supplier
-
 @{
     ViewData["Title"] = "Tedarikçi Düzenle";
 }
-
-<h1>Tedarikçi Düzenle</h1>
-
-<form asp-action="SupplierEdit" method="post">
-    <div class="form-group">
-        <label asp-for="SupplierName" class="control-label"></label>
-        <input asp-for="SupplierName" class="form-control" />
-        <span asp-validation-for="SupplierName" class="text-danger"></span>
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-body">
+                <h3 class="fw-bold mb-4">
+                    <i class="bi bi-pencil text-info"></i> Tedarikçi Düzenle
+                </h3>
+                <form asp-action="SupplierEdit" method="post">
+                    <input type="hidden" asp-for="SupplierID" />
+                    <div class="mb-3">
+                        <label asp-for="SupplierName" class="form-label"></label>
+                        <input asp-for="SupplierName" class="form-control" placeholder="Tedarikçi Adı" />
+                        <span asp-validation-for="SupplierName" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="ContactInfo" class="form-label"></label>
+                        <input asp-for="ContactInfo" class="form-control" placeholder="İletişim Bilgisi" />
+                        <span asp-validation-for="ContactInfo" class="text-danger"></span>
+                    </div>
+                    <div class="mt-4 d-flex justify-content-between">
+                        <a href="/Home/Suppliers" class="btn btn-outline-secondary">Vazgeç</a>
+                        <button type="submit" class="btn btn-info text-white">Güncelle <i class="bi bi-check-circle"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-    <input type="hidden" asp-for="SupplierID" />
-    <div class="form-group">
-        <input type="submit" value="Kaydet" class="btn btn-primary" />
-    </div>
-    @Html.AntiForgeryToken()
-</form>
+</div>
